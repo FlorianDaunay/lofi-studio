@@ -1,0 +1,53 @@
+@import "@fontsource-variable/inter";
+@import "@fontsource-variable/jetbrains-mono";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* The theme (src/themes) sets every --color-*, --radius-*, --shadow-*, ... variable at runtime. */
+@layer base {
+  * {
+    border-style: var(--border-style);
+    border-color: rgb(var(--color-border) / var(--alpha-border));
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    @apply bg-canvas font-sans text-text-primary antialiased;
+    background-image: var(--effect-canvas-image);
+    background-attachment: fixed;
+  }
+
+  :focus-visible {
+    outline: var(--focus-width) solid rgb(var(--color-accent));
+    outline-offset: var(--focus-offset);
+  }
+
+  ::selection {
+    @apply bg-accent text-accent-foreground;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@layer components {
+  /* A panel: the theme decides its fill, border, corners, shadow and glass effect. */
+  .surface {
+    @apply rounded-card border bg-surface shadow-card;
+    -webkit-backdrop-filter: var(--effect-surface-backdrop);
+    backdrop-filter: var(--effect-surface-backdrop);
+  }
+}
