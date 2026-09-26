@@ -13,7 +13,7 @@ export function startBridge(): () => void {
 
   engine.update(getState().params);
   engine.onPlayingChange((playing) => getState().setPlaying(playing));
-  engine.onStep((step) => getState().setStep(step));
+  engine.onStep((step, bar) => getState().setStep(step, bar));
 
   const unsubscribe = subscribe((state, prev) => {
     if (state.params !== prev.params) engine.update(state.params);
@@ -23,7 +23,7 @@ export function startBridge(): () => void {
     unsubscribe();
     engine.onPlayingChange(undefined);
     engine.onStep(undefined);
-    setState({ playing: false, step: -1 });
+    setState({ playing: false, step: -1, bar: -1 });
   };
 }
 

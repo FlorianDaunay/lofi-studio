@@ -1,4 +1,4 @@
-import { chordName, STEPS, TRACKS, type TrackId } from "@/audio";
+import { STEPS, TRACKS, type TrackId } from "@/audio";
 import { cn } from "@/lib/utils";
 import { useStudio } from "@/state/studio";
 
@@ -33,20 +33,9 @@ function Cell({ track, index }: { track: TrackId; index: number }) {
   );
 }
 
-function Progression() {
-  const progression = useStudio((s) => s.params.progression);
-  return (
-    <p className="text-xs text-text-secondary">
-      Chords, one per bar:{" "}
-      <span className="font-mono text-text-primary">{progression.map(chordName).join("  →  ")}</span>
-    </p>
-  );
-}
-
 export function StepGrid() {
   return (
     <div className="flex flex-col gap-3">
-      <Progression />
       <div className="flex flex-col gap-1.5" role="group" aria-label="Step sequencer, 16 steps">
         {TRACKS.map((track) => (
           <div key={track} className="flex items-center gap-3">

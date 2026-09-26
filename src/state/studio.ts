@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { EngineParams, TrackId } from "@/audio";
+import type { Chord, EngineParams, Pattern, TrackId } from "@/audio";
 import { DEFAULT_PARAMS } from "@/songs/params";
 import { randomize, type RandomizeKind } from "@/songs/randomize";
 import type { Song, SongParams } from "@/songs/types";
@@ -30,6 +30,8 @@ interface StudioState extends StudioSnapshot {
   starting: boolean;
   /** Step being played, `-1` when stopped. */
   step: number;
+  /** Bar (chord) being played, `-1` when stopped. */
+  bar: number;
   error: string | null;
   /** The sound before the last randomizations, newest last. Not persisted. */
   history: Backup[];
@@ -44,10 +46,12 @@ interface StudioState extends StudioSnapshot {
   setGlobal: (patch: Partial<Global>) => void;
   setSection: <K extends Section>(section: K, patch: Partial<EngineParams[K]>) => void;
   toggleStep: (track: TrackId, index: number) => void;
+  setPattern: (pattern: Pattern) => void;
+  setProgression: (progression: Chord[]) => void;
   setPanel: (panel: PanelId, open: boolean) => void;
   setPlaying: (playing: boolean) => void;
   setStarting: (starting: boolean) => void;
-  setStep: (step: number) => void;
+  setStep: (step: number, bar: number) => void;
   setError: (error: string | null) => void;
   hydrate: (snapshot: StudioSnapshot) => void;
 }
@@ -65,6 +69,7 @@ export const useStudio = create<StudioState>()((set) => {
     playing: false,
     starting: false,
     step: -1,
+    bar: -1,
     error: null,
     history: [],
 
@@ -96,10 +101,13 @@ export const useStudio = create<StudioState>()((set) => {
         pattern: { ...p.pattern, [track]: p.pattern[track].map((on, i) => (i === index ? !on : on)) },
       })),
 
+    setPattern: (pattern) => edit((p) => ({ ...p, pattern })),
+    setProgression: (progression) => edit((p) => ({ ...p, progression })),
+
     setPanel: (panel, open) => set((s) => ({ panels: { ...s.panels, [panel]: open } })),
-    setPlaying: (playing) => set(playing ? { playing } : { playing, step: -1 }),
+    setPlaying: (playing) => set(playing ? { playing } : { playing, step: -1, bar: -1 }),
     setStarting: (starting) => set({ starting }),
-    setStep: (step) => set({ step }),
+    setStep: (step, bar) => set({ step, bar }),
     setError: (error) => set({ error }),
     hydrate: (snapshot) => set(snapshot),
   };

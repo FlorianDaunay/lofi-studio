@@ -1,4 +1,4 @@
-import { ArrowLeftRight, Library, LoaderCircle, Palette, Play, SlidersHorizontal, Square, type LucideIcon } from "lucide-react";
+import { ArrowLeftRight, GraduationCap, Library, LoaderCircle, Palette, Play, SlidersHorizontal, Square, type LucideIcon } from "lucide-react";
 import { useState } from "react";
 import { ThemeDialog } from "@/components/appearance/ThemeDialog";
 import { cn } from "@/lib/utils";
@@ -12,6 +12,7 @@ const ITEMS: { page: Page; label: string; icon: LucideIcon }[] = [
   { page: "studio", label: "Studio", icon: SlidersHorizontal },
   { page: "library", label: "Library", icon: Library },
   { page: "share", label: "Import / Export", icon: ArrowLeftRight },
+  { page: "learn", label: "Learn", icon: GraduationCap },
 ];
 
 const itemClass =

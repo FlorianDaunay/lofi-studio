@@ -1,3 +1,3 @@
 export { AudioEngine } from "./engine";
-export { chordName } from "./music";
+export { chordMidiNotes, chordName, lfoFloor } from "./music";
 export * from "./types";

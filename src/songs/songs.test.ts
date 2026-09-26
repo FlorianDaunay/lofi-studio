@@ -4,6 +4,7 @@ import { DEFAULT_PARAMS } from "./params";
 import { DEFAULT_PINNED, fillPinned } from "./pinned";
 import { sanitizeDraft, sanitizeParams } from "./sanitize";
 import { parseShare, shareFileName, toShareCode, toShareFile } from "./share";
+import { MAX_BARS, parseChord, parseProgression, withBarAdded, withBarRemoved, withChord } from "./chords";
 import { RANDOMIZE_KINDS, randomize } from "./randomize";
 import { PINNED_SLOTS } from "./types";
 
@@ -151,5 +152,54 @@ describe("randomize", () => {
       expect(result.progression).not.toEqual(DEFAULT_PARAMS.progression);
       expect(Object.values(result.ambience).some((level) => level > 0)).toBe(true);
     }
+  });
+});
+
+describe("built-in library", () => {
+  it("has twelve distinct songs", () => {
+    expect(BUILT_IN_SONGS).toHaveLength(12);
+    expect(new Set(BUILT_IN_SONGS.map((s) => s.id)).size).toBe(12);
+    expect(new Set(BUILT_IN_SONGS.map((s) => s.name)).size).toBe(12);
+  });
+
+  it("only contains valid, lo-fi-paced songs", () => {
+    for (const s of BUILT_IN_SONGS) {
+      expect({ ...sanitizeParams(s.params), volume: undefined }).toEqual({ ...s.params, volume: undefined });
+      expect(s.params.bpm).toBeGreaterThanOrEqual(70);
+      expect(s.params.bpm).toBeLessThanOrEqual(85);
+      expect(s.params.progression).toHaveLength(4);
+      expect(Object.values(s.params.ambience).some((level) => level > 0)).toBe(true);
+    }
+  });
+
+  it("does not repeat the same groove and chords twice", () => {
+    const fingerprints = BUILT_IN_SONGS.map((s) => JSON.stringify([s.params.pattern, s.params.progression]));
+    expect(new Set(fingerprints).size).toBe(BUILT_IN_SONGS.length);
+  });
+});
+
+describe("chords", () => {
+  it("parses chord symbols", () => {
+    expect(parseChord("Dm9")).toEqual({ pc: 2, quality: "m9" });
+    expect(parseChord("Bb13")).toEqual({ pc: 10, quality: "dom13" });
+    expect(parseChord("F#maj7")).toEqual({ pc: 6, quality: "maj7" });
+    expect(parseProgression("Cmaj7  A7")).toHaveLength(2);
+    expect(() => parseChord("H7")).toThrow();
+    expect(() => parseChord("Cfoo")).toThrow();
+  });
+
+  it("edits a progression without mutating it", () => {
+    const start = parseProgression("Dm9 G13");
+    expect(withChord(start, 1, { quality: "dom7" })[1]).toEqual({ pc: 7, quality: "dom7" });
+    expect(start[1]).toEqual({ pc: 7, quality: "dom13" });
+  });
+
+  it("keeps between one and eight bars", () => {
+    let progression = parseProgression("Dm9");
+    expect(withBarRemoved(progression, 0)).toHaveLength(1);
+    for (let i = 0; i < 12; i++) progression = withBarAdded(progression);
+    expect(progression).toHaveLength(MAX_BARS);
+    expect(withBarAdded(progression)).toHaveLength(MAX_BARS);
+    expect(withBarRemoved(progression, 3)).toHaveLength(MAX_BARS - 1);
   });
 });

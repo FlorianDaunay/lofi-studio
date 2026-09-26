@@ -1,10 +1,11 @@
 import { sanitizeDraft, sanitizeParams, isRecord } from "@/songs/sanitize";
+import { sanitizeLearned } from "./learning";
 import { MAX_SONG_NAME, MAX_USER_SONGS, type Song } from "@/songs/types";
 
-export const PANEL_IDS = ["sequencer", "instruments", "effects"] as const;
+export const PANEL_IDS = ["sequencer", "chords", "instruments", "effects"] as const;
 export type PanelId = (typeof PANEL_IDS)[number];
 
-export const DEFAULT_PANELS: Record<PanelId, boolean> = { sequencer: false, instruments: false, effects: false };
+export const DEFAULT_PANELS: Record<PanelId, boolean> = { sequencer: false, chords: false, instruments: false, effects: false };
 
 /** What is written to `config.json` (the Rust side stores it verbatim, after checking it is JSON). */
 export interface PersistedConfig {
@@ -15,6 +16,8 @@ export interface PersistedConfig {
   panels: Record<PanelId, boolean>;
   songs: Song[];
   pinned: string[];
+  /** Tutorial lessons marked as done. */
+  learned: string[];
 }
 
 const id = (v: unknown) => (typeof v === "string" && v.length > 0 && v.length <= 64 ? v : null);
@@ -49,5 +52,6 @@ export function sanitizeConfig(raw: unknown): PersistedConfig {
     panels: Object.fromEntries(PANEL_IDS.map((panel) => [panel, panels[panel] === true])) as Record<PanelId, boolean>,
     songs: sanitizeSongs(r.songs),
     pinned: Array.isArray(r.pinned) ? r.pinned : [],
+    learned: sanitizeLearned(r.learned),
   };
 }

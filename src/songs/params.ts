@@ -1,5 +1,6 @@
-import type { Chord, EngineParams, Pattern } from "@/audio/types";
+import type { EngineParams, Pattern } from "@/audio/types";
 import { STEPS } from "@/audio/types";
+import { parseProgression } from "./chords";
 
 /** `"x..x"` style pattern: `x` is a hit, anything else a rest. */
 export function steps(text: string): boolean[] {
@@ -16,14 +17,7 @@ export const emptyPattern = (): Pattern => ({
   keys: Array<boolean>(STEPS).fill(false),
 });
 
-export const PC = { C: 0, D: 2, Eb: 3, E: 4, F: 5, G: 7, A: 9, Bb: 10 } as const;
-
-export const DEFAULT_PROGRESSION: Chord[] = [
-  { pc: PC.D, quality: "m9" },
-  { pc: PC.G, quality: "dom13" },
-  { pc: PC.C, quality: "maj7" },
-  { pc: PC.A, quality: "dom7" },
-];
+export const DEFAULT_PROGRESSION = parseProgression("Dm9 G13 Cmaj7 A7");
 
 export const DEFAULT_PARAMS: EngineParams = {
   bpm: 78,

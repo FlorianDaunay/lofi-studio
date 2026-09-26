@@ -1,4 +1,5 @@
 import { Sidebar } from "@/components/layout/Sidebar";
+import { LearnPage } from "@/pages/LearnPage";
 import { LibraryPage } from "@/pages/LibraryPage";
 import { SharePage } from "@/pages/SharePage";
 import { StudioPage } from "@/pages/StudioPage";
@@ -8,6 +9,7 @@ const PAGE_COMPONENTS: Record<Page, () => React.JSX.Element> = {
   studio: StudioPage,
   library: LibraryPage,
   share: SharePage,
+  learn: LearnPage,
 };
 
 export default function App() {

@@ -11,7 +11,7 @@ const VOICINGS: Record<ChordQuality, number[]> = {
   dom13: [4, 10, 14, 21],
 };
 
-const SYMBOLS: Record<ChordQuality, string> = {
+export const QUALITY_SYMBOLS: Record<ChordQuality, string> = {
   m7: "m7",
   m9: "m9",
   m11: "m11",
@@ -21,11 +21,11 @@ const SYMBOLS: Record<ChordQuality, string> = {
   dom13: "13",
 };
 
-const NOTE_NAMES = ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"];
+export const NOTE_NAMES = ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"];
 
 export const midiToHz = (midi: number) => 440 * 2 ** ((midi - 69) / 12);
 
-export const chordName = (chord: Chord) => `${NOTE_NAMES[chord.pc % 12]}${SYMBOLS[chord.quality]}`;
+export const chordName = (chord: Chord) => `${NOTE_NAMES[chord.pc % 12]}${QUALITY_SYMBOLS[chord.quality]}`;
 
 /** Keys voicing in Hz, kept in a warm mid register (C3..B3 root). */
 export function chordFrequencies(chord: Chord): number[] {
@@ -35,3 +35,12 @@ export function chordFrequencies(chord: Chord): number[] {
 
 /** Bass note in Hz, in C2..B2. */
 export const bassFrequency = (chord: Chord, octaveShift = 0) => midiToHz(36 + (chord.pc % 12) + 12 * octaveShift);
+
+/** MIDI notes of the keys voicing (same notes as `chordFrequencies`), and of the bass root. */
+export const chordMidiNotes = (chord: Chord): { keys: number[]; bass: number } => ({
+  keys: VOICINGS[chord.quality].map((interval) => 48 + (chord.pc % 12) + interval),
+  bass: 36 + (chord.pc % 12),
+});
+
+/** Lowest cutoff of the keys' wobble: the LFO sweeps between this and `cutoff` (up to 3.5 octaves down). */
+export const lfoFloor = (cutoff: number, depth: number) => Math.max(90, cutoff * 2 ** (-3.5 * depth));

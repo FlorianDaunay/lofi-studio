@@ -1,4 +1,5 @@
 import { loadConfig, saveConfig } from "@/lib/persistence";
+import { useLearning } from "./learning";
 import { useLibrary } from "./library";
 import type { PersistedConfig } from "./config";
 import { useStudio } from "./studio";
@@ -10,6 +11,7 @@ export async function restoreConfig(): Promise<void> {
   const saved = await loadConfig();
   if (!saved) return;
   useLibrary.getState().hydrate(saved.songs, saved.pinned);
+  useLearning.getState().hydrate(saved.learned);
   const { params, songId, dirty, panels } = saved;
   useStudio.getState().hydrate({ params, songId, dirty, panels });
 }
@@ -17,7 +19,8 @@ export async function restoreConfig(): Promise<void> {
 function snapshot(): PersistedConfig {
   const { params, songId, dirty, panels } = useStudio.getState();
   const { songs, pinned } = useLibrary.getState();
-  return { version: 2, params, songId, dirty, panels, songs, pinned };
+  const learned = useLearning.getState().done;
+  return { version: 2, params, songId, dirty, panels, songs, pinned, learned };
 }
 
 /**
@@ -45,12 +48,14 @@ export function startAutosave(): () => void {
     if (s.params !== prev.params || s.songId !== prev.songId || s.dirty !== prev.dirty || s.panels !== prev.panels) schedule();
   });
   const unsubscribeLibrary = useLibrary.subscribe(schedule);
+  const unsubscribeLearning = useLearning.subscribe(schedule);
   window.addEventListener("pagehide", flushPending);
   document.addEventListener("visibilitychange", flushPending);
 
   return () => {
     unsubscribeStudio();
     unsubscribeLibrary();
+    unsubscribeLearning();
     window.removeEventListener("pagehide", flushPending);
     document.removeEventListener("visibilitychange", flushPending);
     flushPending();

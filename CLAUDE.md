@@ -19,7 +19,8 @@ Before saying a change is done: `npm run typecheck && npm test`; if Rust changed
 ```
 src/components, src/pages   UI. Reads stores, calls actions. No audio, no persistence code.
 src/state                   Zustand stores + actions + persistence wiring.
-src/songs                   Song domain: types, defaults, built-ins, sanitizers, share format. Pure TS.
+src/songs                   Song domain: types, defaults, built-ins, chords, sanitizers, share format. Pure TS.
+src/learn                   Tutorial curriculum (levels + lesson ids). Pure data.
 src/audio                   AudioEngine. No React, no Zustand, no import from src/state or src/songs.
 src/lib                     Thin adapters: Tauri invoke, files, runtime detection.
 src/themes                  Design-token theme system (user-owned, keep its conventions).
@@ -28,11 +29,20 @@ src-tauri                   Rust: window, CSP, config persistence, file dialogs.
 
 - **`src/audio`**: `AudioEngine` receives an immutable `EngineParams` via `update()` and diffs by reference. Nothing is created until the first `play()` (user gesture). `stop()` fades, halts transport + noise sources, then suspends the context. `dispose()` releases everything. Do not import Tone at module scope anywhere except `src/audio`.
 - **`src/songs`**: a `Song` = `{ id, name, description, createdAt, builtIn, params }`. `params` is `EngineParams` minus `volume` (volume belongs to the listener). Built-ins live in `builtin.ts` and are never persisted. Import value types from `@/audio/types` (not the `@/audio` index) so this folder stays free of Tone and testable in Node.
+- **Chords** (`songs/chords.ts`): a progression is 1 to 8 `Chord`s (`pc` 0 to 11 + `quality`), one per bar. Write static progressions as text (`parseProgression("Dm9 G13 Cmaj7 A7")`). Every chord quality needs a voicing in `audio/music.ts` and an entry in `QUALITY_INFO`.
+- **Built-in songs** (`songs/builtin.ts`): 12 songs from a compact `Definition`; the first four are the default pinned ones. A test checks they are valid, distinct, 70 to 85 BPM, and have some ambience. Keep names and id slugs unique.
 - **Randomization** (`songs/randomize.ts`) draws only from curated lists and soft ranges, takes an injectable RNG, and must never change volume or instrument levels. Its tests assert that every result survives `sanitizeParams` unchanged: keep new random ranges inside `RANGES`.
 - **Untrusted input** (config file, imported songs) must go through `songs/sanitize.ts` / `state/config.ts`. They rebuild every field and clamp to `songs/ranges.ts`. If you add a param: add it to `EngineParams`, `DEFAULT_PARAMS`, `sanitizeParams`, `RANGES` (if numeric), the engine, the UI, and a test.
 - **Stores**: `useStudio` (live sound, current song, dirty flag, playback state), `useLibrary` (user songs + 4 pinned slot ids), `useNavigation` (current page, not persisted). Stores never import each other; cross-store operations live in `state/actions.ts`. Components select the smallest slice they need.
 - **Persistence**: `state/persist.ts` restores before first render and autosaves (debounced) to `config.json` through the Rust `load_config` / `save_config`. Theme preference is the exception: `src/themes/store.ts` keeps it in `localStorage`.
 - **Sharing**: `songs/share.ts` (`{format:"lofi-studio", version, songs}` JSON, or `lofi1:` + base64 code). Files go through Rust dialogs (`files.rs`); the frontend never chooses a path.
+
+## Tutorial ("Learn" page)
+
+- `src/learn/curriculum.ts` lists levels and lessons (ids are the source of truth); `components/learn/lesson-bodies.tsx` maps every id to its body (a `Record<LessonId, ...>`: the compiler flags a missing one); bodies live in `components/learn/lessons/levelN.tsx`; diagrams in `components/learn/*.tsx`.
+- **To add a lesson**: add it to the curriculum, write its body, add it to `lesson-bodies.tsx`. Progress (`useLearning.done`) is persisted and filtered to known ids, so renaming an id resets that lesson only.
+- Every lesson must contain a `<Try>` block that operates the *real* studio (no fake demos) and must not repeat another lesson's widget. Text is short, plain English, no unexplained jargon; a term is bold the first time it appears in a lesson.
+- Diagrams that depend on params read them from `useStudio`, so they stay live. Respect `prefers-reduced-motion` in animations.
 
 ## Conventions
 

@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-export const PAGES = ["studio", "library", "share"] as const;
+export const PAGES = ["studio", "library", "share", "learn"] as const;
 export type Page = (typeof PAGES)[number];
 
 interface NavigationState {

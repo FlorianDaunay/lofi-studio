@@ -1,4 +1,5 @@
 import * as Tone from "tone";
+import { lfoFloor } from "./music";
 import type { BassParams, DrumsParams, KeysParams } from "./types";
 
 /** Every instrument exposes one output node and cleans up after itself. */
@@ -38,7 +39,7 @@ export class Keys implements Instrument {
     this.synth.set({ oscillator: { type: wave }, envelope: adsr });
     this.lfo.frequency.rampTo(lfoRate, 0.1);
     this.lfo.max = cutoff;
-    this.lfo.min = Math.max(90, cutoff * 2 ** (-3.5 * lfoDepth));
+    this.lfo.min = lfoFloor(cutoff, lfoDepth);
   }
 
   releaseAll() {

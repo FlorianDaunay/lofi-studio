@@ -1,6 +1,7 @@
 import type { Chord, EngineParams, Pattern, Waveform } from "@/audio/types";
 import { STEPS } from "@/audio/types";
-import { emptyPattern, PC } from "./params";
+import { parseProgression } from "./chords";
+import { emptyPattern } from "./params";
 
 /**
  * Musical randomness: every function draws from lists and ranges that sound good together, rather
@@ -20,15 +21,15 @@ const pickOne = <T>(rng: Rng, items: readonly T[]): T => items[Math.floor(rng() 
 
 /** Jazzy four-bar progressions that all resolve nicely, so any of them works with any groove. */
 export const PROGRESSIONS: readonly Chord[][] = [
-  [{ pc: PC.D, quality: "m9" }, { pc: PC.G, quality: "dom13" }, { pc: PC.C, quality: "maj7" }, { pc: PC.A, quality: "dom7" }],
-  [{ pc: PC.C, quality: "maj7" }, { pc: PC.A, quality: "m9" }, { pc: PC.D, quality: "m9" }, { pc: PC.G, quality: "dom13" }],
-  [{ pc: PC.A, quality: "m9" }, { pc: PC.F, quality: "maj7" }, { pc: PC.C, quality: "maj7" }, { pc: PC.E, quality: "dom7" }],
-  [{ pc: PC.Eb, quality: "maj7" }, { pc: PC.C, quality: "m9" }, { pc: PC.F, quality: "m9" }, { pc: PC.Bb, quality: "dom13" }],
-  [{ pc: PC.F, quality: "maj7" }, { pc: PC.E, quality: "m7" }, { pc: PC.D, quality: "m9" }, { pc: PC.G, quality: "dom13" }],
-  [{ pc: PC.G, quality: "m9" }, { pc: PC.C, quality: "dom13" }, { pc: PC.F, quality: "maj7" }, { pc: PC.Bb, quality: "maj7" }],
-  [{ pc: PC.Bb, quality: "maj7" }, { pc: PC.G, quality: "m9" }, { pc: PC.C, quality: "m9" }, { pc: PC.F, quality: "dom13" }],
-  [{ pc: PC.E, quality: "m9" }, { pc: PC.A, quality: "dom13" }, { pc: PC.D, quality: "maj7" }, { pc: 11, quality: "m7" }],
-];
+  "Dm9 G13 Cmaj7 A7",
+  "Cmaj7 Am9 Dm9 G13",
+  "Am9 Fmaj7 Cmaj7 E7",
+  "Ebmaj7 Cm9 Fm9 Bb13",
+  "Fmaj7 Em7 Dm9 G13",
+  "Gm9 C13 Fmaj7 Bbmaj7",
+  "Bbmaj7 Gm9 Cm9 F13",
+  "Em9 A13 Dmaj7 Bm7",
+].map(parseProgression);
 
 const sameProgression = (a: readonly Chord[], b: readonly Chord[]) =>
   a.length === b.length && a.every((chord, i) => chord.pc === b[i]!.pc && chord.quality === b[i]!.quality);

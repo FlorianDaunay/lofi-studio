@@ -45,7 +45,7 @@ export class AudioEngine {
   private playing = false;
   private counter = 0;
   private shutdownTimer: ReturnType<typeof setTimeout> | undefined;
-  private stepListener: ((step: number) => void) | undefined;
+  private stepListener: ((step: number, bar: number) => void) | undefined;
   private playingListener: ((playing: boolean) => void) | undefined;
   private removeStateListener: (() => void) | undefined;
 
@@ -53,7 +53,7 @@ export class AudioEngine {
     return this.playing;
   }
 
-  onStep(listener: ((step: number) => void) | undefined) {
+  onStep(listener: ((step: number, bar: number) => void) | undefined) {
     this.stepListener = listener;
   }
 
@@ -237,6 +237,6 @@ export class AudioEngine {
       });
     }
 
-    Tone.getDraw().schedule(() => this.stepListener?.(step), time);
+    Tone.getDraw().schedule(() => this.stepListener?.(step, bar), time);
   }
 }
