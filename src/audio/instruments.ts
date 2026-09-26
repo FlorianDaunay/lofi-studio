@@ -79,26 +79,42 @@ function guitarVoice(): Voice {
   };
 }
 
-const KEYS_VOICES: Record<KeysVoice, () => Voice> = {
-  rhodes: () =>
-    fmVoice({
-      harmonicity: 3,
-      modulationIndex: 1.4,
-      modulation: { type: "sine" },
-      modulationEnvelope: { attack: 0.005, decay: 0.6, sustain: 0.15, release: 0.8 },
-    }),
-  vibes: () =>
-    fmVoice({
-      harmonicity: 4,
-      modulationIndex: 2.5,
-      modulation: { type: "sine" },
-      modulationEnvelope: { attack: 0.001, decay: 0.25, sustain: 0, release: 0.3 },
-    }),
+/** A guitar-like pluck from plain oscillators: the light stand-in for the plucked strings on phones. */
+const pluckVoice = (maxPolyphony: number) =>
+  partialsVoice([1, 0.5, 0.33, 0.25, 0.15, 0.1], (adsr) => ({ attack: 0.002, decay: Math.max(0.3, adsr.decay), sustain: 0, release: 0.3 }), maxPolyphony);
+
+/** `lowPower` lowers the polyphony and avoids the plucked strings, which each run a script processor. */
+const KEYS_VOICES: Record<KeysVoice, (lowPower: boolean) => Voice> = {
+  rhodes: (lowPower) =>
+    fmVoice(
+      {
+        harmonicity: 3,
+        modulationIndex: 1.4,
+        modulation: { type: "sine" },
+        modulationEnvelope: { attack: 0.005, decay: 0.6, sustain: 0.15, release: 0.8 },
+      },
+      lowPower ? 12 : 16,
+    ),
+  vibes: (lowPower) =>
+    fmVoice(
+      {
+        harmonicity: 4,
+        modulationIndex: 2.5,
+        modulation: { type: "sine" },
+        modulationEnvelope: { attack: 0.001, decay: 0.25, sustain: 0, release: 0.3 },
+      },
+      lowPower ? 12 : 16,
+    ),
   // A felt piano always dies away, whatever sustain was set.
-  piano: () => partialsVoice([1, 0.35, 0.15, 0.06, 0.03], (adsr) => ({ ...adsr, attack: Math.min(adsr.attack, 0.03), sustain: Math.min(adsr.sustain, 0.12) })),
+  piano: (lowPower) =>
+    partialsVoice(
+      [1, 0.35, 0.15, 0.06, 0.03],
+      (adsr) => ({ ...adsr, attack: Math.min(adsr.attack, 0.03), sustain: Math.min(adsr.sustain, 0.12) }),
+      lowPower ? 12 : 16,
+    ),
   // An organ holds its notes.
-  organ: () => partialsVoice([1, 0.7, 0.45, 0, 0.3, 0, 0, 0.15], (adsr) => ({ ...adsr, sustain: Math.max(adsr.sustain, 0.8) })),
-  guitar: guitarVoice,
+  organ: (lowPower) => partialsVoice([1, 0.7, 0.45, 0, 0.3, 0, 0, 0.15], (adsr) => ({ ...adsr, sustain: Math.max(adsr.sustain, 0.8) }), lowPower ? 12 : 16),
+  guitar: (lowPower) => (lowPower ? pluckVoice(12) : guitarVoice()),
 };
 
 /** Jazzy chords with a choice of voice, through a low-pass with an LFO "wobble" and a chorus. */
@@ -110,7 +126,7 @@ export class Keys implements Instrument {
   private readonly lfo = new Tone.LFO({ frequency: 0.3, min: 800, max: 2400, type: "sine" });
   private readonly chorus = new Tone.Chorus({ frequency: 0.7, delayTime: 3.5, depth: 0.5, wet: 0.45 });
 
-  constructor() {
+  constructor(private readonly lowPower = false) {
     this.chorus.start();
     this.lfo.connect(this.filter.frequency);
     this.lfo.start();
@@ -120,7 +136,7 @@ export class Keys implements Instrument {
   apply({ level, voice, wave, adsr, cutoff, lfoRate, lfoDepth }: KeysParams) {
     if (voice !== this.voiceId) {
       this.voice?.dispose();
-      this.voice = KEYS_VOICES[voice]();
+      this.voice = KEYS_VOICES[voice](this.lowPower);
       this.voice.node.connect(this.filter);
       this.voiceId = voice;
     }
@@ -290,8 +306,8 @@ export class Pad implements Instrument {
   private voice: PadVoice = "warm";
   level = 0;
 
-  constructor() {
-    this.synth.maxPolyphony = 12;
+  constructor(private readonly lowPower = false) {
+    this.synth.maxPolyphony = lowPower ? 10 : 12;
     this.synth.chain(this.filter, this.output);
   }
 
@@ -307,7 +323,8 @@ export class Pad implements Instrument {
     this.output.gain.rampTo(level * 0.5, 0.05);
     this.filter.frequency.rampTo(cutoff, 0.1);
     this.synth.set({
-      oscillator: PAD_OSCILLATORS[voice].oscillator,
+      // Each "fat" oscillator is `count` detuned oscillators: two are enough on a phone.
+      oscillator: this.lowPower ? { ...PAD_OSCILLATORS[voice].oscillator, count: 2 } : PAD_OSCILLATORS[voice].oscillator,
       envelope: { attack, decay: 0.6, sustain: 0.85, release: Math.max(1.2, attack) },
     });
   }

@@ -21,7 +21,8 @@ export default function App() {
   return (
     <div className="flex h-full">
       <Sidebar />
-      <div className="min-w-0 flex-1 overflow-y-auto">
+      {/* The page scrolls vertically only: a widget that is too wide must scroll inside itself, never pan the whole page. */}
+      <div className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden">
         {/* Keyed by page so each page starts scrolled to the top and with fresh local state. */}
         {/* On phones the bottom bars cover the end of the page: leave room for them. */}
         <main

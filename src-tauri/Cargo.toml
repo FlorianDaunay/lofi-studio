@@ -1,6 +1,6 @@
 [package]
 name = "lofi-studio"
-version = "0.6.0"
+version = "0.6.1"
 description = "A modular procedural Lo-Fi mini-studio"
 edition = "2021"
 rust-version = "1.77"

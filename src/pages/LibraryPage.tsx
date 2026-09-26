@@ -99,7 +99,7 @@ export function LibraryPage() {
         ) : mine.length === 0 ? (
           <p className="text-sm text-text-muted">No song of yours matches “{query}”.</p>
         ) : (
-          <ul className="grid gap-3 lg:grid-cols-2">{mine.map(renderCard)}</ul>
+          <ul className="grid grid-cols-1 gap-3 lg:grid-cols-2">{mine.map(renderCard)}</ul>
         )}
       </section>
 
@@ -108,7 +108,7 @@ export function LibraryPage() {
         {builtIn.length === 0 ? (
           <p className="text-sm text-text-muted">No built-in song matches “{query}”.</p>
         ) : (
-          <ul className="grid gap-3 lg:grid-cols-2">{builtIn.map(renderCard)}</ul>
+          <ul className="grid grid-cols-1 gap-3 lg:grid-cols-2">{builtIn.map(renderCard)}</ul>
         )}
       </section>
 

@@ -40,7 +40,17 @@ const masterGain = (volume: number) => volume ** 2;
  * `stop()` fades out, halts the transport and the noise sources, then suspends the context so
  * an idle studio uses no CPU. `dispose()` releases every node and closes the context.
  */
+export interface EngineOptions {
+  /**
+   * Phones: a lighter graph (32 kHz, fewer voices, cheaper reverb and saturation) and a longer
+   * scheduling window, so neither a busy audio thread nor a janky page makes the sound crackle.
+   */
+  lowPower?: boolean;
+}
+
 export class AudioEngine {
+  constructor(private readonly options: EngineOptions = {}) {}
+
   private graph: Graph | undefined;
   private building: Promise<Graph> | undefined;
   private params: EngineParams | undefined;
@@ -149,21 +159,24 @@ export class AudioEngine {
 
   private async build(): Promise<Graph> {
     // "playback" trades a little latency for lower CPU: right for a background music app.
-    Tone.setContext(new Tone.Context({ latencyHint: "playback" }));
+    const lowPower = this.options.lowPower === true;
+    // The master low-pass keeps everything under ~12 kHz anyway: 32 kHz loses nothing audible and saves a third of the work.
+    const audioContext = new AudioContext({ latencyHint: "playback", ...(lowPower ? { sampleRate: 32000 } : {}) });
+    Tone.setContext(new Tone.Context({ context: audioContext, lookAhead: lowPower ? 0.3 : 0.1 }));
     await Tone.start();
 
-    const keys = new Keys();
+    const keys = new Keys(lowPower);
     const bass = new Bass();
     const drums = new Drums();
-    const pad = new Pad();
+    const pad = new Pad(lowPower);
     const lead = new Lead();
     const rain = new Rain();
     const vinyl = new Vinyl();
     const wind = new Wind();
 
     const mix = new Tone.Gain(1);
-    const reverb = new Tone.Reverb({ decay: 2.4, preDelay: 0.02, wet: 0.2 });
-    const warmth = new Tone.Distortion({ distortion: 0.35, wet: 0, oversample: "2x" });
+    const reverb = new Tone.Reverb({ decay: lowPower ? 1.6 : 2.4, preDelay: 0.02, wet: 0.2 });
+    const warmth = new Tone.Distortion({ distortion: 0.35, wet: 0, oversample: lowPower ? "none" : "2x" });
     const tone = new Tone.Filter({ type: "lowpass", frequency: 6000, Q: 0.5, rolloff: -12 });
     const wobble = new Tone.Vibrato({ frequency: 0.55, depth: 0, wet: 0 });
     const compressor = new Tone.Compressor(-20, 3);

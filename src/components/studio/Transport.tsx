@@ -69,7 +69,7 @@ export function Transport() {
           format={(v) => `${Math.round(v * 100)}%`}
           onChange={(v) => setGlobal({ volume: v })}
         />
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <RandomizeMenu />
           {canSaveChanges && (
             <Button size="sm" variant="primary" onClick={saveCurrentChanges}>

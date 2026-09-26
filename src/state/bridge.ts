@@ -1,8 +1,9 @@
 import { AudioEngine } from "@/audio";
+import { isMobile } from "@/lib/runtime";
 import { useStudio } from "./studio";
 
 /** The single audio engine of the app. */
-export const engine = new AudioEngine();
+export const engine = new AudioEngine({ lowPower: isMobile });
 
 /**
  * Wires the studio store to the engine: params flow in, playback state flows out.

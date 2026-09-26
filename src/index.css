@@ -24,6 +24,13 @@
     background-attachment: fixed;
   }
 
+  /* On phones a fixed background repaints the whole screen on every scroll step, stealing time from the audio. */
+  @media (pointer: coarse) {
+    body {
+      background-attachment: scroll;
+    }
+  }
+
   :focus-visible {
     outline: var(--focus-width) solid rgb(var(--color-accent));
     outline-offset: var(--focus-offset);

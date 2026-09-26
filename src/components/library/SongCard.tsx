@@ -32,7 +32,7 @@ function IconAction({ label, onClick, children }: { label: string; onClick: () =
 
 export function SongCard({ song, current, pinnedSlot, onLoad, onPin, onPlaylist, onExport, onCopy, onEdit, onDelete }: SongCardProps) {
   return (
-    <li className={cn("surface flex flex-col gap-3 p-4", current && "border-accent bg-accent/10")}>
+    <li className={cn("surface flex min-w-0 flex-col gap-3 p-4", current && "border-accent bg-accent/10")}>
       <div className="flex items-start gap-3">
         <SongCover params={song.params} className="w-16 shrink-0" />
         <div className="min-w-0 flex-1">
@@ -51,7 +51,7 @@ export function SongCard({ song, current, pinnedSlot, onLoad, onPin, onPlaylist,
         {song.params.bpm} BPM · {songChords(song)}
       </p>
 
-      <div className="flex items-center gap-1 border-t pt-3">
+      <div className="flex flex-wrap items-center gap-1 border-t pt-3">
         <Button size="sm" variant={current ? "secondary" : "primary"} onClick={onLoad}>
           <Play className="h-3.5 w-3.5 fill-current" aria-hidden />
           {current ? "Loaded" : "Load"}
