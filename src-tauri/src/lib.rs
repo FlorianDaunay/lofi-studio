@@ -1,4 +1,5 @@
 mod config;
+mod files;
 
 use tauri::{WebviewUrl, WebviewWindowBuilder};
 
@@ -10,7 +11,13 @@ fn is_internal(url: &tauri::Url) -> bool {
 
 pub fn run() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![config::load_config, config::save_config])
+        .plugin(tauri_plugin_dialog::init())
+        .invoke_handler(tauri::generate_handler![
+            config::load_config,
+            config::save_config,
+            files::save_text_file,
+            files::open_text_file
+        ])
         .setup(|app| {
             // The window is built here (not in tauri.conf.json) so navigation can be restricted.
             WebviewWindowBuilder::new(app, "main", WebviewUrl::default())

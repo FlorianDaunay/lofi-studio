@@ -1,14 +1,11 @@
 import { AudioEngine } from "@/audio";
-import { saveConfig } from "@/lib/persistence";
-import { selectConfig, useStudio } from "./studio";
+import { useStudio } from "./studio";
 
 /** The single audio engine of the app. */
 export const engine = new AudioEngine();
 
-const SAVE_DELAY_MS = 500;
-
 /**
- * Wires the store to the engine (params flow in, playback state flows out) and to the disk.
+ * Wires the studio store to the engine: params flow in, playback state flows out.
  * Returns a cleanup function, so React StrictMode and hot reload can start it twice safely.
  */
 export function startBridge(): () => void {
@@ -18,34 +15,12 @@ export function startBridge(): () => void {
   engine.onPlayingChange((playing) => getState().setPlaying(playing));
   engine.onStep((step) => getState().setStep(step));
 
-  const unsubscribeParams = subscribe((state, prev) => {
+  const unsubscribe = subscribe((state, prev) => {
     if (state.params !== prev.params) engine.update(state.params);
   });
 
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  const flush = () => {
-    clearTimeout(timer);
-    timer = undefined;
-    saveConfig(selectConfig(getState())).catch((error) => console.warn("Could not save the configuration.", error));
-  };
-  const unsubscribeSave = subscribe((state, prev) => {
-    if (state.params === prev.params && state.presetId === prev.presetId && state.panels === prev.panels) return;
-    clearTimeout(timer);
-    timer = setTimeout(flush, SAVE_DELAY_MS);
-  });
-  // Do not lose a pending save when the window is hidden or closed.
-  const flushPending = () => {
-    if (timer !== undefined) flush();
-  };
-  window.addEventListener("pagehide", flushPending);
-  document.addEventListener("visibilitychange", flushPending);
-
   return () => {
-    unsubscribeParams();
-    unsubscribeSave();
-    window.removeEventListener("pagehide", flushPending);
-    document.removeEventListener("visibilitychange", flushPending);
-    flushPending();
+    unsubscribe();
     engine.onPlayingChange(undefined);
     engine.onStep(undefined);
     setState({ playing: false, step: -1 });

@@ -1,20 +1,27 @@
-import { LoaderCircle, Play, Shuffle, Square } from "lucide-react";
+import { LoaderCircle, Play, Save, Shuffle, Square } from "lucide-react";
+import { useState } from "react";
+import { SongForm } from "@/components/library/SongForm";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
-import { RANGES } from "@/state/ranges";
+import { RANGES } from "@/songs/ranges";
+import { canOverwriteCurrent, saveCurrentAs, saveCurrentChanges } from "@/state/actions";
 import { togglePlay } from "@/state/bridge";
-import { findPreset } from "@/state/presets";
+import { useCurrentSong } from "@/state/selectors";
 import { useStudio } from "@/state/studio";
 
 export function Transport() {
   const playing = useStudio((s) => s.playing);
   const starting = useStudio((s) => s.starting);
   const error = useStudio((s) => s.error);
+  const dirty = useStudio((s) => s.dirty);
   const bpm = useStudio((s) => s.params.bpm);
   const volume = useStudio((s) => s.params.volume);
-  const presetName = useStudio((s) => findPreset(s.presetId)?.name ?? "Custom loop");
   const setGlobal = useStudio((s) => s.setGlobal);
   const regenerate = useStudio((s) => s.regenerate);
+  const song = useCurrentSong();
+  const [saving, setSaving] = useState(false);
+
+  const canSaveChanges = dirty && song !== undefined && !song.builtIn && canOverwriteCurrent();
 
   return (
     <section aria-label="Transport" className="surface flex flex-wrap items-center gap-5 p-5">
@@ -36,7 +43,10 @@ export function Transport() {
 
       <div className="min-w-40 flex-1">
         <p className="text-xs uppercase tracking-wider text-text-muted">{playing ? "Now playing" : "Ready"}</p>
-        <h2 className="text-xl font-semibold">{presetName}</h2>
+        <h2 className="flex items-center gap-2 text-xl font-semibold">
+          <span className="truncate">{song?.name ?? "Custom sound"}</span>
+          {dirty && song && <span className="rounded-pill bg-warning/15 px-2 py-0.5 text-xs font-medium text-warning">Modified</span>}
+        </h2>
         <p className="font-mono text-xs text-text-secondary">{bpm} BPM</p>
         {error && (
           <p role="alert" className="mt-1 text-xs text-danger">
@@ -53,11 +63,33 @@ export function Transport() {
           format={(v) => `${Math.round(v * 100)}%`}
           onChange={(v) => setGlobal({ volume: v })}
         />
-        <Button size="sm" onClick={regenerate}>
-          <Shuffle className="h-4 w-4" aria-hidden />
-          New groove
-        </Button>
+        <div className="flex gap-2">
+          <Button size="sm" onClick={regenerate}>
+            <Shuffle className="h-4 w-4" aria-hidden />
+            New groove
+          </Button>
+          {canSaveChanges && (
+            <Button size="sm" variant="primary" onClick={saveCurrentChanges}>
+              <Save className="h-4 w-4" aria-hidden />
+              Save
+            </Button>
+          )}
+          <Button size="sm" onClick={() => setSaving(true)}>
+            <Save className="h-4 w-4" aria-hidden />
+            Save as…
+          </Button>
+        </div>
       </div>
+
+      <SongForm
+        open={saving}
+        onOpenChange={setSaving}
+        title="Save as a new song"
+        description="It is added to your library and can be pinned on the Studio page."
+        submitLabel="Save song"
+        initial={{ name: song ? `${song.name} (mine)`.slice(0, 60) : "", description: "" }}
+        onSubmit={saveCurrentAs}
+      />
     </section>
   );
 }

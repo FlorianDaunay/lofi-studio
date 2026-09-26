@@ -3,7 +3,7 @@ import type { Waveform } from "@/audio";
 import { Panel } from "@/components/ui/panel";
 import { Segmented } from "@/components/ui/segmented";
 import { Slider } from "@/components/ui/slider";
-import { RANGES } from "@/state/ranges";
+import { RANGES } from "@/songs/ranges";
 import { useStudio } from "@/state/studio";
 import { AdsrEditor } from "./AdsrEditor";
 import { StepGrid } from "./StepGrid";

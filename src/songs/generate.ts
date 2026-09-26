@@ -1,6 +1,6 @@
 import type { Pattern } from "@/audio";
-import { STEPS } from "@/audio";
-import { emptyPattern } from "./defaults";
+import { STEPS } from "@/audio/types";
+import { emptyPattern } from "./params";
 
 const chance = (p: number) => Math.random() < p;
 const pick = (steps: number[], p: number, into: boolean[]) => {

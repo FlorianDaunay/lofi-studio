@@ -1,6 +1,6 @@
 import type { Adsr } from "@/audio";
 import { Slider } from "@/components/ui/slider";
-import { RANGES } from "@/state/ranges";
+import { RANGES } from "@/songs/ranges";
 
 const seconds = (v: number) => `${v.toFixed(2)} s`;
 

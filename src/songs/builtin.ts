@@ -1,23 +1,16 @@
-import type { EngineParams } from "@/audio";
-import { DEFAULT_PARAMS, PC, steps } from "./defaults";
+import type { Song, SongParams } from "./types";
+import { DEFAULT_PARAMS, PC, steps } from "./params";
 
-export interface Preset {
-  id: string;
-  name: string;
-  description: string;
-  icon: "rain" | "moon" | "wind" | "coffee";
-  /** Everything except the master volume, which stays the listener's. */
-  params: Omit<EngineParams, "volume">;
-}
-
+/** The shared starting point of the built-in songs. */
 const { volume: _volume, ...base } = DEFAULT_PARAMS;
 
-export const PRESETS: Preset[] = [
+type BuiltIn = { id: string; name: string; description: string; params: SongParams };
+
+const definitions: BuiltIn[] = [
   {
     id: "rainy-study",
     name: "Rainy Study",
-    description: "75 BPM · soft keys, steady rain, warm vinyl",
-    icon: "rain",
+    description: "Soft keys, steady rain, warm vinyl.",
     params: {
       ...base,
       bpm: 75,
@@ -29,8 +22,7 @@ export const PRESETS: Preset[] = [
   {
     id: "midnight-jazz",
     name: "Midnight Jazz",
-    description: "80 BPM · ii-V-I keys, deep swing, crackle",
-    icon: "moon",
+    description: "ii-V-I keys, deep swing, crackle.",
     params: {
       ...base,
       bpm: 80,
@@ -56,8 +48,7 @@ export const PRESETS: Preset[] = [
   {
     id: "sunday-wind",
     name: "Sunday Wind",
-    description: "78 BPM · airy, slow chords, drifting wind",
-    icon: "wind",
+    description: "Airy, slow chords, drifting wind.",
     params: {
       ...base,
       bpm: 78,
@@ -83,8 +74,7 @@ export const PRESETS: Preset[] = [
   {
     id: "tape-cafe",
     name: "Tape Café",
-    description: "85 BPM · worn tape, wobbly keys, busy groove",
-    icon: "coffee",
+    description: "Worn tape, wobbly keys, busy groove.",
     params: {
       ...base,
       bpm: 85,
@@ -109,4 +99,6 @@ export const PRESETS: Preset[] = [
   },
 ];
 
-export const findPreset = (id: string | null) => PRESETS.find((p) => p.id === id);
+
+/** Ships with the app; never saved to the config file. */
+export const BUILT_IN_SONGS: Song[] = definitions.map((d) => ({ ...d, createdAt: 0, builtIn: true }));

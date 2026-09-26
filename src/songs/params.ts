@@ -1,5 +1,5 @@
-import type { Chord, EngineParams, Pattern } from "@/audio";
-import { STEPS } from "@/audio";
+import type { Chord, EngineParams, Pattern } from "@/audio/types";
+import { STEPS } from "@/audio/types";
 
 /** `"x..x"` style pattern: `x` is a hit, anything else a rest. */
 export function steps(text: string): boolean[] {

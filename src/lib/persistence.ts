@@ -1,11 +1,11 @@
 import { invoke } from "@tauri-apps/api/core";
 import { sanitizeConfig, type PersistedConfig } from "@/state/config";
+import { isTauri } from "./runtime";
 
 /**
  * Configuration lives in a JSON file in the OS app-config directory, written by the Rust side
  * (`load_config` / `save_config`). In a plain browser (`npm run dev`) it falls back to localStorage.
  */
-const isTauri = "__TAURI_INTERNALS__" in window;
 const LOCAL_KEY = "lofi-studio-config";
 
 export async function loadConfig(): Promise<PersistedConfig | null> {

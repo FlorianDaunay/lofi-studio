@@ -2,7 +2,7 @@ import { CloudRain, Disc3, Wind, type LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import type { AmbienceParams } from "@/audio";
-import { RANGES } from "@/state/ranges";
+import { RANGES } from "@/songs/ranges";
 import { useStudio } from "@/state/studio";
 
 const LAYERS: { key: keyof AmbienceParams; label: string; icon: LucideIcon; hint: string }[] = [

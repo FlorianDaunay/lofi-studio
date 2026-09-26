@@ -7,8 +7,8 @@ use std::{fs, io, path::PathBuf};
 use tauri::{AppHandle, Manager};
 
 const FILE_NAME: &str = "config.json";
-/// The real config is a few KB; anything bigger is a bug or abuse, not a setting.
-const MAX_BYTES: usize = 64 * 1024;
+/// A library of a couple hundred songs is well under this; anything bigger is a bug or abuse.
+const MAX_BYTES: usize = 1024 * 1024;
 
 fn config_path(app: &AppHandle) -> Result<PathBuf, String> {
     let dir = app.path().app_config_dir().map_err(|e| e.to_string())?;
