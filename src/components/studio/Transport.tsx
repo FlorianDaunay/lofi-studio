@@ -1,4 +1,4 @@
-import { LoaderCircle, Play, Save, Shuffle, Square } from "lucide-react";
+import { LoaderCircle, Play, Save, Square } from "lucide-react";
 import { useState } from "react";
 import { SongForm } from "@/components/library/SongForm";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,7 @@ import { canOverwriteCurrent, saveCurrentAs, saveCurrentChanges } from "@/state/
 import { togglePlay } from "@/state/bridge";
 import { useCurrentSong } from "@/state/selectors";
 import { useStudio } from "@/state/studio";
+import { RandomizeMenu } from "./RandomizeMenu";
 
 export function Transport() {
   const playing = useStudio((s) => s.playing);
@@ -17,7 +18,6 @@ export function Transport() {
   const bpm = useStudio((s) => s.params.bpm);
   const volume = useStudio((s) => s.params.volume);
   const setGlobal = useStudio((s) => s.setGlobal);
-  const regenerate = useStudio((s) => s.regenerate);
   const song = useCurrentSong();
   const [saving, setSaving] = useState(false);
 
@@ -64,10 +64,7 @@ export function Transport() {
           onChange={(v) => setGlobal({ volume: v })}
         />
         <div className="flex gap-2">
-          <Button size="sm" onClick={regenerate}>
-            <Shuffle className="h-4 w-4" aria-hidden />
-            New groove
-          </Button>
+          <RandomizeMenu />
           {canSaveChanges && (
             <Button size="sm" variant="primary" onClick={saveCurrentChanges}>
               <Save className="h-4 w-4" aria-hidden />

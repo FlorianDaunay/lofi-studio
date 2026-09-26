@@ -4,6 +4,7 @@ import { DEFAULT_PARAMS } from "./params";
 import { DEFAULT_PINNED, fillPinned } from "./pinned";
 import { sanitizeDraft, sanitizeParams } from "./sanitize";
 import { parseShare, shareFileName, toShareCode, toShareFile } from "./share";
+import { RANDOMIZE_KINDS, randomize } from "./randomize";
 import { PINNED_SLOTS } from "./types";
 
 const song = BUILT_IN_SONGS[0]!;
@@ -88,5 +89,67 @@ describe("fillPinned", () => {
 
   it("defaults to the built-in songs", () => {
     expect(DEFAULT_PINNED).toHaveLength(PINNED_SLOTS);
+  });
+});
+
+describe("randomize", () => {
+  // A deterministic generator so failures are reproducible.
+  const seeded = (start: number) => {
+    let seed = start;
+    return () => {
+      seed = (seed * 1664525 + 1013904223) % 4294967296;
+      return seed / 4294967296;
+    };
+  };
+  const runs = Array.from({ length: 200 }, (_, i) => i + 1);
+
+  it("always produces params the sanitizer accepts unchanged", () => {
+    for (const kind of RANDOMIZE_KINDS) {
+      for (const seed of runs) {
+        const result = randomize(kind, DEFAULT_PARAMS, seeded(seed));
+        expect(sanitizeParams(result)).toEqual(result);
+      }
+    }
+  });
+
+  it("changes only what each kind promises", () => {
+    const groove = randomize("groove", DEFAULT_PARAMS, seeded(1));
+    expect({ ...groove, pattern: DEFAULT_PARAMS.pattern }).toEqual(DEFAULT_PARAMS);
+
+    const chords = randomize("chords", DEFAULT_PARAMS, seeded(2));
+    expect({ ...chords, progression: DEFAULT_PARAMS.progression }).toEqual(DEFAULT_PARAMS);
+    expect(chords.progression).not.toEqual(DEFAULT_PARAMS.progression);
+
+    const sound = randomize("sound", DEFAULT_PARAMS, seeded(3));
+    expect(sound.pattern).toEqual(DEFAULT_PARAMS.pattern);
+    expect(sound.progression).toEqual(DEFAULT_PARAMS.progression);
+    expect(sound.bpm).toBe(DEFAULT_PARAMS.bpm);
+  });
+
+  it("never moves volume or instrument levels, and keeps the lo-fi tempo", () => {
+    for (const seed of runs) {
+      const result = randomize("surprise", DEFAULT_PARAMS, seeded(seed));
+      expect(result.volume).toBe(DEFAULT_PARAMS.volume);
+      expect(result.keys.level).toBe(DEFAULT_PARAMS.keys.level);
+      expect(result.bass.level).toBe(DEFAULT_PARAMS.bass.level);
+      expect(result.drums).toEqual(DEFAULT_PARAMS.drums);
+      expect(result.bpm).toBeGreaterThanOrEqual(72);
+      expect(result.bpm).toBeLessThanOrEqual(85);
+    }
+  });
+
+  it("keeps the backbone of every groove", () => {
+    for (const seed of runs) {
+      const { pattern } = randomize("groove", DEFAULT_PARAMS, seeded(seed));
+      expect([pattern.kick[0], pattern.snare[4], pattern.snare[12], pattern.bass[0], pattern.keys[0]]).toEqual([true, true, true, true, true]);
+    }
+  });
+
+  it("picks a new progression and always leaves something audible in the ambience", () => {
+    for (const seed of runs) {
+      const result = randomize("surprise", DEFAULT_PARAMS, seeded(seed));
+      expect(result.progression).not.toEqual(DEFAULT_PARAMS.progression);
+      expect(Object.values(result.ambience).some((level) => level > 0)).toBe(true);
+    }
   });
 });

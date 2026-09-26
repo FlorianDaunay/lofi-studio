@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import type { EngineParams, TrackId } from "@/audio";
-import { generatePattern } from "@/songs/generate";
 import { DEFAULT_PARAMS } from "@/songs/params";
+import { randomize, type RandomizeKind } from "@/songs/randomize";
 import type { Song, SongParams } from "@/songs/types";
 import { DEFAULT_PANELS, type PanelId } from "./config";
 
@@ -16,6 +16,14 @@ export interface StudioSnapshot {
   panels: Record<PanelId, boolean>;
 }
 
+/** What is kept to undo a randomization. */
+interface Backup {
+  params: EngineParams;
+  dirty: boolean;
+}
+
+const MAX_HISTORY = 5;
+
 interface StudioState extends StudioSnapshot {
   playing: boolean;
   /** True while the audio engine is starting (the first play builds the whole graph). */
@@ -23,12 +31,16 @@ interface StudioState extends StudioSnapshot {
   /** Step being played, `-1` when stopped. */
   step: number;
   error: string | null;
+  /** The sound before the last randomizations, newest last. Not persisted. */
+  history: Backup[];
 
   /** Makes a song the current sound. The listener's volume is kept. */
   loadSong: (song: Song) => void;
   /** Tells the studio the current sound is now stored as `songId` (after a save). */
   markSaved: (songId: string) => void;
-  regenerate: () => void;
+  /** Randomizes part of the sound (see `RandomizeKind`); the previous sound can be restored. */
+  randomize: (kind: RandomizeKind) => void;
+  undoRandomize: () => void;
   setGlobal: (patch: Partial<Global>) => void;
   setSection: <K extends Section>(section: K, patch: Partial<EngineParams[K]>) => void;
   toggleStep: (track: TrackId, index: number) => void;
@@ -54,11 +66,28 @@ export const useStudio = create<StudioState>()((set) => {
     starting: false,
     step: -1,
     error: null,
+    history: [],
 
-    loadSong: (song) => set((s) => ({ params: { ...song.params, volume: s.params.volume }, songId: song.id, dirty: false })),
+    loadSong: (song) => set((s) => ({ params: { ...song.params, volume: s.params.volume }, songId: song.id, dirty: false, history: [] })),
     markSaved: (songId) => set({ songId, dirty: false }),
 
-    regenerate: () => edit((p) => ({ ...p, pattern: generatePattern() })),
+    randomize: (kind) =>
+      set((s) => ({
+        params: randomize(kind, s.params),
+        dirty: true,
+        history: [...s.history, { params: s.params, dirty: s.dirty }].slice(-MAX_HISTORY),
+      })),
+    undoRandomize: () =>
+      set((s) => {
+        const previous = s.history.at(-1);
+        if (!previous) return s;
+        // The volume belongs to the listener: undoing must not move it.
+        return {
+          params: { ...previous.params, volume: s.params.volume },
+          dirty: previous.dirty,
+          history: s.history.slice(0, -1),
+        };
+      }),
     setGlobal: (patch) => edit((p) => ({ ...p, ...patch })),
     setSection: (section, patch) => edit((p) => ({ ...p, [section]: { ...p[section], ...patch } })),
     toggleStep: (track, index) =>

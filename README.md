@@ -11,6 +11,7 @@ Tauri 2 (Rust) · React 19 · TypeScript · Zustand · Tone.js · Tailwind 3 + R
 - **One-click moods.** Four pinned songs on the Studio page, each a full setup (75–85 BPM tempo, jazzy chords, groove, sound, ambience). Choose which four are pinned.
 - **Procedural sound.** FM electric piano with low-pass + LFO wobble, sub bass, synthesized drums, and three ambience layers: rain (filtered pink noise + droplets), vinyl (random crackle and hiss), wind (slowly drifting brown noise).
 - **Two levels of control.** Minimal by default; expandable panels for the 16-step sequencer (tempo, swing, humanize), instruments (waveforms, ADSR envelopes, filters, LFO) and lo-fi effects (tape wobble, warmth, reverb, master low-pass).
+- **Randomize menu.** New groove, new chords, new sound or "Surprise me", each drawn from musically safe choices (curated jazzy progressions, soft ranges), never touching volume or levels. Up to five undos.
 - **Library.** Save any sound as a song, rename it, pin it, delete it. Built-in songs can be copied.
 - **Import / export.** Share songs as a `.lofi.json` file or as a short text code you can paste in a chat.
 - **59 themes** with live previews, searchable, light/dark, optional "match system".
