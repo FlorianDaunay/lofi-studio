@@ -27,10 +27,24 @@ export const midiToHz = (midi: number) => 440 * 2 ** ((midi - 69) / 12);
 
 export const chordName = (chord: Chord) => `${NOTE_NAMES[chord.pc % 12]}${QUALITY_SYMBOLS[chord.quality]}`;
 
-/** Keys voicing in Hz, kept in a warm mid register (C3..B3 root). */
-export function chordFrequencies(chord: Chord): number[] {
-  const root = 48 + (chord.pc % 12);
+/** Keys voicing in Hz, kept in a warm mid register (C3..B3 root). `octave` shifts it (the pad uses +1 for its airy voice). */
+export function chordFrequencies(chord: Chord, octave = 0): number[] {
+  const root = 48 + (chord.pc % 12) + 12 * octave;
   return VOICINGS[chord.quality].map((interval) => midiToHz(root + interval));
+}
+
+/**
+ * Which chord tone the lead plays on each step: a fixed rise-and-fall contour. Following the
+ * chord (rather than a scale) keeps any pattern in tune, and the fixed shape makes it a tune.
+ */
+const LEAD_CONTOUR = [0, 1, 2, 1, 3, 2, 1, 0, 2, 3, 4, 3, 2, 4, 1, 0];
+
+/** MIDI note of the lead on `step`: root or a chord tone, around C4..B4. */
+export function leadMidi(chord: Chord, step: number): number {
+  const pc = chord.pc % 12;
+  const root = 60 + (pc > 6 ? pc - 12 : pc);
+  const tones = [0, ...VOICINGS[chord.quality]];
+  return root + tones[(LEAD_CONTOUR[step % LEAD_CONTOUR.length] ?? 0) % tones.length]!;
 }
 
 /** Bass note in Hz, in C2..B2. */

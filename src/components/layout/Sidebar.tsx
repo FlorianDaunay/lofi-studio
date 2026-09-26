@@ -1,24 +1,16 @@
-import { ArrowLeftRight, GraduationCap, Library, ListMusic, LoaderCircle, Palette, Play, SkipBack, SkipForward, SlidersHorizontal, Square, type LucideIcon } from "lucide-react";
+import { LoaderCircle, Palette, Play, SkipBack, SkipForward, Square } from "lucide-react";
 import { useState } from "react";
 import { ThemeDialog } from "@/components/appearance/ThemeDialog";
 import { cn } from "@/lib/utils";
 import { togglePlay } from "@/state/bridge";
 import { playNext, playPrevious } from "@/state/playback";
-import { useNavigation, type Page } from "@/state/navigation";
+import { useNavigation } from "@/state/navigation";
 import { useCurrentSong } from "@/state/selectors";
 import { useStudio } from "@/state/studio";
 import { useActiveTheme } from "@/themes";
+import { NAV_ITEMS } from "./nav-items";
 
-const ITEMS: { page: Page; label: string; icon: LucideIcon }[] = [
-  { page: "studio", label: "Studio", icon: SlidersHorizontal },
-  { page: "library", label: "Library", icon: Library },
-  { page: "playlists", label: "Playlists", icon: ListMusic },
-  { page: "share", label: "Import / Export", icon: ArrowLeftRight },
-  { page: "learn", label: "Learn", icon: GraduationCap },
-];
-
-const itemClass =
-  "flex w-full items-center gap-3 rounded-control px-3 py-2 text-sm transition-colors hover:bg-sidebar-hover hover:text-sidebar-text-strong";
+const itemClass = "flex w-full items-center gap-3 rounded-control px-3 py-2 text-sm transition-colors hover:bg-sidebar-hover hover:text-sidebar-text-strong";
 
 /** Play / stop and the current song, reachable from every page. */
 function MiniPlayer() {
@@ -42,10 +34,22 @@ function MiniPlayer() {
         <span className="block truncate text-sm font-medium text-sidebar-text-strong">{song?.name ?? "Custom sound"}</span>
       </span>
       <span className="hidden shrink-0 md:flex">
-        <button type="button" onClick={playPrevious} aria-label="Previous song" title="Previous song" className="rounded-control p-1.5 hover:bg-sidebar-hover hover:text-sidebar-text-strong">
+        <button
+          type="button"
+          onClick={playPrevious}
+          aria-label="Previous song"
+          title="Previous song"
+          className="rounded-control p-1.5 hover:bg-sidebar-hover hover:text-sidebar-text-strong"
+        >
           <SkipBack className="h-3.5 w-3.5" aria-hidden />
         </button>
-        <button type="button" onClick={playNext} aria-label="Next song" title="Next song" className="rounded-control p-1.5 hover:bg-sidebar-hover hover:text-sidebar-text-strong">
+        <button
+          type="button"
+          onClick={playNext}
+          aria-label="Next song"
+          title="Next song"
+          className="rounded-control p-1.5 hover:bg-sidebar-hover hover:text-sidebar-text-strong"
+        >
           <SkipForward className="h-3.5 w-3.5" aria-hidden />
         </button>
       </span>
@@ -60,7 +64,7 @@ export function Sidebar() {
   const [appearanceOpen, setAppearanceOpen] = useState(false);
 
   return (
-    <aside className="flex w-16 shrink-0 flex-col gap-4 border-r border-sidebar-border bg-sidebar p-2 text-sidebar-text md:w-60 md:p-3">
+    <aside className="hidden w-16 shrink-0 flex-col gap-4 border-r border-sidebar-border bg-sidebar p-2 text-sidebar-text md:flex md:w-60 md:p-3">
       <div className="flex items-center gap-3 px-1 pt-1 md:px-2">
         <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-tile bg-accent text-accent-foreground" aria-hidden>
           <Play className="h-4 w-4 fill-current" />
@@ -72,7 +76,7 @@ export function Sidebar() {
       </div>
 
       <nav aria-label="Main" className="flex flex-1 flex-col gap-1">
-        {ITEMS.map(({ page: target, label, icon: Icon }) => {
+        {NAV_ITEMS.map(({ page: target, label, icon: Icon }) => {
           const active = page === target;
           return (
             <button

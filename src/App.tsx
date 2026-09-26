@@ -1,3 +1,4 @@
+import { MobileNav } from "@/components/layout/MobileNav";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { LearnPage } from "@/pages/LearnPage";
 import { LibraryPage } from "@/pages/LibraryPage";
@@ -22,10 +23,15 @@ export default function App() {
       <Sidebar />
       <div className="min-w-0 flex-1 overflow-y-auto">
         {/* Keyed by page so each page starts scrolled to the top and with fresh local state. */}
-        <main key={page} className="mx-auto flex max-w-4xl flex-col gap-5 p-6">
+        {/* On phones the bottom bars cover the end of the page: leave room for them. */}
+        <main
+          key={page}
+          className="mx-auto flex max-w-4xl flex-col gap-5 px-4 pb-[calc(9rem+env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))] md:p-6"
+        >
           <Current />
         </main>
       </div>
+      <MobileNav />
     </div>
   );
 }

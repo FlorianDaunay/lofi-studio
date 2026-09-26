@@ -3,10 +3,11 @@ import { BUILT_IN_SONGS } from "./builtin";
 import { DEFAULT_PARAMS } from "./params";
 import { DEFAULT_PINNED, fillPinned } from "./pinned";
 import { sanitizeDraft, sanitizeParams } from "./sanitize";
-import { parseShare, shareFileName, toShareCode, toShareFile } from "./share";
+import { parseShare, shareFileName, toShareCode, toShareDocument, toShareFile, type Shareable } from "./share";
 import { MAX_BARS, parseChord, parseProgression, withBarAdded, withBarRemoved, withChord } from "./chords";
 import { RANDOMIZE_KINDS, randomize } from "./randomize";
-import { PINNED_SLOTS } from "./types";
+import { PINNED_SLOTS, type Song, type SongParams } from "./types";
+import { BASS_VOICES, DRUM_KITS, KEYS_VOICES, LEAD_VOICES, PAD_VOICES } from "@/audio/types";
 
 const song = BUILT_IN_SONGS[0]!;
 
@@ -51,28 +52,73 @@ describe("sanitizeDraft", () => {
 });
 
 describe("share format", () => {
-  it("round-trips through a file and through a share code", () => {
-    const expected = [{ name: song.name, description: song.description, params: song.params }];
-    expect(parseShare(toShareFile([song]))).toEqual({ songs: expected });
-    expect(parseShare(toShareCode([song]))).toEqual({ songs: expected });
+  const draft = (s: Shareable) => ({ name: s.name, description: s.description, params: s.params });
+  const only = (songs: Shareable[]) => ({ songs, playlists: [] });
+
+  it("round-trips songs through a file and through a share code", async () => {
+    const expected = { songs: [draft(song)], playlists: [] };
+    expect(await parseShare(toShareFile(only([song])))).toEqual(expected);
+    expect(await parseShare(await toShareCode(only([song])))).toEqual(expected);
   });
 
-  it("round-trips non-ASCII names", () => {
-    const named = { ...song, name: "Café nocturne ☕" };
-    const result = parseShare(toShareCode([named]));
-    expect("songs" in result && result.songs[0]?.name).toBe("Café nocturne ☕");
+  it("writes version 1 without playlists, so older apps can still read it", () => {
+    expect(toShareDocument(only([song])).version).toBe(1);
+    expect(toShareDocument(only([song]))).not.toHaveProperty("playlists");
   });
 
-  it("explains what is wrong instead of throwing", () => {
-    for (const bad of ["", "not json", "lofi1:%%%", "{}", '{"format":"lofi-studio","version":99,"songs":[]}', '{"format":"lofi-studio","version":1,"songs":[]}']) {
-      expect(parseShare(bad)).toHaveProperty("error");
-    }
+  it("compresses share codes", async () => {
+    const code = await toShareCode(only(BUILT_IN_SONGS));
+    expect(code.startsWith("lofi2:")).toBe(true);
+    expect(code.length).toBeLessThan(toShareFile(only(BUILT_IN_SONGS)).length / 3);
+  });
+
+  it("still reads the old uncompressed codes", async () => {
+    const legacy = "lofi1:" + Buffer.from(JSON.stringify({ format: "lofi-studio", version: 1, songs: [draft(song)] })).toString("base64");
+    expect(await parseShare(legacy)).toEqual({ songs: [draft(song)], playlists: [] });
+  });
+
+  it("carries playlists: user songs are embedded once, built-ins referenced by id", async () => {
+    const mine: Song = { ...song, id: "u1", builtIn: false, name: "Mine" };
+    const selection = {
+      songs: [mine],
+      playlists: [{ name: "Mix", description: "d", songs: [song, mine, BUILT_IN_SONGS[1]!] }],
+    };
+    const document = toShareDocument(selection);
+    expect(document.version).toBe(2);
+    expect(document.songs).toHaveLength(1);
+    expect(document.playlists).toEqual([{ name: "Mix", description: "d", items: [{ builtIn: song.id }, { song: 0 }, { builtIn: BUILT_IN_SONGS[1]!.id }] }]);
+    expect(await parseShare(await toShareCode(selection))).toEqual({ songs: [draft(mine)], playlists: document.playlists });
+  });
+
+  it("drops playlist items that point nowhere", async () => {
+    const text = JSON.stringify({
+      format: "lofi-studio",
+      version: 2,
+      songs: [],
+      playlists: [{ name: " P ", items: [{ song: 0 }, { builtIn: "not-a-song" }, { builtIn: song.id }, "x", { song: -1 }] }],
+    });
+    expect(await parseShare(text)).toEqual({ songs: [], playlists: [{ name: "P", description: "", items: [{ builtIn: song.id }] }] });
+  });
+
+  it("explains what is wrong instead of throwing", async () => {
+    const bad = [
+      "",
+      "not json",
+      "lofi1:%%%",
+      "lofi2:%%%",
+      "lofi2:AAAA",
+      "{}",
+      '{"format":"lofi-studio","version":99,"songs":[]}',
+      '{"format":"lofi-studio","version":1,"songs":[]}',
+    ];
+    for (const text of bad) expect(await parseShare(text)).toHaveProperty("error");
   });
 
   it("builds safe file names", () => {
-    expect(shareFileName([{ name: "Rainy Study!" }])).toBe("rainy-study.lofi.json");
-    expect(shareFileName([{ name: "???" }])).toBe("song.lofi.json");
-    expect(shareFileName([{ name: "a" }, { name: "b" }])).toBe("lofi-studio-library.lofi.json");
+    expect(shareFileName(only([{ ...song, name: "Rainy Study!" }]))).toBe("rainy-study.lofi.json");
+    expect(shareFileName(only([{ ...song, name: "???" }]))).toBe("song.lofi.json");
+    expect(shareFileName(only([song, song]))).toBe("lofi-studio-share.lofi.json");
+    expect(shareFileName({ songs: [], playlists: [{ name: "Night Mix", description: "", songs: [] }] })).toBe("night-mix.lofi.json");
   });
 });
 
@@ -133,7 +179,9 @@ describe("randomize", () => {
       expect(result.volume).toBe(DEFAULT_PARAMS.volume);
       expect(result.keys.level).toBe(DEFAULT_PARAMS.keys.level);
       expect(result.bass.level).toBe(DEFAULT_PARAMS.bass.level);
-      expect(result.drums).toEqual(DEFAULT_PARAMS.drums);
+      expect({ ...result.drums, kit: undefined }).toEqual({ ...DEFAULT_PARAMS.drums, kit: undefined });
+      expect(result.pad.level).toBe(DEFAULT_PARAMS.pad.level);
+      expect(result.lead.level).toBe(DEFAULT_PARAMS.lead.level);
       expect(result.bpm).toBeGreaterThanOrEqual(72);
       expect(result.bpm).toBeLessThanOrEqual(85);
     }
@@ -156,20 +204,54 @@ describe("randomize", () => {
 });
 
 describe("built-in library", () => {
-  it("has twelve distinct songs", () => {
-    expect(BUILT_IN_SONGS).toHaveLength(12);
-    expect(new Set(BUILT_IN_SONGS.map((s) => s.id)).size).toBe(12);
-    expect(new Set(BUILT_IN_SONGS.map((s) => s.name)).size).toBe(12);
+  it("has two dozen songs with unique ids and names", () => {
+    expect(BUILT_IN_SONGS).toHaveLength(24);
+    expect(new Set(BUILT_IN_SONGS.map((s) => s.id)).size).toBe(24);
+    expect(new Set(BUILT_IN_SONGS.map((s) => s.name)).size).toBe(24);
   });
 
   it("only contains valid, lo-fi-paced songs", () => {
     for (const s of BUILT_IN_SONGS) {
       expect({ ...sanitizeParams(s.params), volume: undefined }).toEqual({ ...s.params, volume: undefined });
-      expect(s.params.bpm).toBeGreaterThanOrEqual(70);
-      expect(s.params.bpm).toBeLessThanOrEqual(85);
-      expect(s.params.progression).toHaveLength(4);
+      expect(s.params.bpm).toBeGreaterThanOrEqual(60);
+      expect(s.params.bpm).toBeLessThanOrEqual(96);
       expect(Object.values(s.params.ambience).some((level) => level > 0)).toBe(true);
     }
+  });
+
+  it("uses every voice and kit somewhere", () => {
+    const used = (pick: (p: SongParams) => string) => new Set(BUILT_IN_SONGS.map((s) => pick(s.params)));
+    expect(used((p) => p.keys.voice)).toEqual(new Set(KEYS_VOICES));
+    expect(used((p) => p.bass.voice)).toEqual(new Set(BASS_VOICES));
+    expect(used((p) => p.drums.kit)).toEqual(new Set(DRUM_KITS));
+    expect(used((p) => (p.pad.level > 0 ? p.pad.voice : "off"))).toEqual(new Set([...PAD_VOICES, "off"]));
+    expect(used((p) => (p.lead.level > 0 ? p.lead.voice : "off"))).toEqual(new Set([...LEAD_VOICES, "off"]));
+  });
+
+  it("makes every pair of songs audibly different", () => {
+    // What a listener notices first: the instruments, the tempo, the chords, the texture.
+    const traits = (p: SongParams) => [
+      p.keys.voice,
+      p.bass.voice,
+      p.drums.kit,
+      p.pad.level > 0 ? p.pad.voice : "no pad",
+      p.lead.level > 0 ? p.lead.voice : "no lead",
+      Math.round(p.bpm / 8),
+      p.progression.map((c) => `${c.pc}${c.quality}`).join(),
+      p.drums.kick + p.drums.snare < 0.2 ? "no beat" : "beat",
+      p.swing < 0.4 ? "straight" : p.swing < 0.6 ? "swung" : "shuffled",
+      (["rain", "vinyl", "wind"] as const).reduce((a, b) => (p.ambience[b] > p.ambience[a] ? b : a)),
+    ];
+    const tooClose: string[] = [];
+    for (let i = 0; i < BUILT_IN_SONGS.length; i++) {
+      for (let j = i + 1; j < BUILT_IN_SONGS.length; j++) {
+        const a = traits(BUILT_IN_SONGS[i]!.params);
+        const b = traits(BUILT_IN_SONGS[j]!.params);
+        const differences = a.filter((trait, k) => trait !== b[k]).length;
+        if (differences < 5) tooClose.push(`${BUILT_IN_SONGS[i]!.name} / ${BUILT_IN_SONGS[j]!.name} (${differences})`);
+      }
+    }
+    expect(tooClose).toEqual([]);
   });
 
   it("does not repeat the same groove and chords twice", () => {

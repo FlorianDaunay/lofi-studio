@@ -1,8 +1,9 @@
 import { create } from "zustand";
 import { BUILT_IN_SONGS } from "@/songs/builtin";
+import { BUILT_IN_PLAYLISTS } from "@/songs/builtin-playlists";
 import { DEFAULT_PINNED, fillPinned } from "@/songs/pinned";
 import { pruneSongIds, sanitizePlaylists, withSongAdded, withSongMoved, withSongRemoved } from "@/songs/playlists";
-import { MAX_PLAYLISTS, MAX_SONG_NAME, MAX_USER_SONGS, PINNED_SLOTS, type Playlist, type Song, type SongDraft } from "@/songs/types";
+import { MAX_PLAYLISTS, MAX_SONG_DESCRIPTION, MAX_SONG_NAME, MAX_USER_SONGS, PINNED_SLOTS, type Playlist, type Song, type SongDraft } from "@/songs/types";
 
 const builtInIds = BUILT_IN_SONGS.map((song) => song.id);
 const validIds = (userSongs: readonly Song[]) => [...builtInIds, ...userSongs.map((song) => song.id)];
@@ -19,7 +20,7 @@ interface LibraryState {
   songs: Song[];
   /** Exactly `PINNED_SLOTS` song ids, shown on the Studio page. */
   pinned: string[];
-  /** The user's playlists, newest first. */
+  /** The user's playlists, newest first. Built-in playlists are not stored here. */
   playlists: Playlist[];
 
   /** Returns the new songs (an import may be cut short by the library size limit). */
@@ -28,7 +29,7 @@ interface LibraryState {
   deleteSong: (id: string) => void;
   pinSong: (slot: number, id: string) => void;
   /** Returns the new playlist, or `undefined` when the limit is reached. */
-  createPlaylist: (name: string, songIds?: readonly string[]) => Playlist | undefined;
+  createPlaylist: (name: string, songIds?: readonly string[], description?: string) => Playlist | undefined;
   renamePlaylist: (id: string, name: string) => void;
   deletePlaylist: (id: string) => void;
   addToPlaylist: (id: string, songId: string) => void;
@@ -77,11 +78,13 @@ export const useLibrary = create<LibraryState>()((set, get) => ({
     });
   },
 
-  createPlaylist: (name, songIds = []) => {
+  createPlaylist: (name, songIds = [], description = "") => {
     if (get().playlists.length >= MAX_PLAYLISTS) return undefined;
     const playlist: Playlist = {
       id: crypto.randomUUID(),
       name: name.trim().slice(0, MAX_SONG_NAME) || "Untitled playlist",
+      description: description.trim().slice(0, MAX_SONG_DESCRIPTION),
+      builtIn: false,
       songIds: pruneSongIds(songIds, new Set(validIds(get().songs))),
       createdAt: Date.now(),
     };
@@ -102,7 +105,12 @@ export const useLibrary = create<LibraryState>()((set, get) => ({
     set({ songs, pinned: fillPinned(pinned, validIds(songs)), playlists: sanitizePlaylists(playlists, validIds(songs)) }),
 }));
 
-export const findPlaylist = (playlists: readonly Playlist[], id: string): Playlist | undefined => playlists.find((list) => list.id === id);
+/** Looks in the built-in playlists, then in the user's. Pass the `playlists` you selected from the store. */
+export const findPlaylist = (playlists: readonly Playlist[], id: string): Playlist | undefined =>
+  BUILT_IN_PLAYLISTS.find((list) => list.id === id) ?? playlists.find((list) => list.id === id);
+
+/** The user's playlists first (they are the ones being worked on), then the built-in ones. */
+export const allPlaylists = (playlists: readonly Playlist[]): Playlist[] => [...playlists, ...BUILT_IN_PLAYLISTS];
 
 export const findSong = (songs: readonly Song[], id: string | null): Song | undefined =>
   id === null ? undefined : (BUILT_IN_SONGS.find((s) => s.id === id) ?? songs.find((s) => s.id === id));

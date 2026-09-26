@@ -1,4 +1,4 @@
-import { Pencil, Play, Trash2 } from "lucide-react";
+import { Copy, Pencil, Play, Trash2 } from "lucide-react";
 import { PlaylistCover } from "@/components/library/PlaylistCover";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -16,22 +16,30 @@ export const formatDuration = (seconds: number) => {
 interface PlaylistCardProps {
   playlist: Playlist;
   onOpen: () => void;
-  onRename: () => void;
-  onDelete: () => void;
+  /** Built-in playlists are copied, the user's own are renamed and deleted. */
+  onCopy?: () => void;
+  onRename?: () => void;
+  onDelete?: () => void;
 }
 
-export function PlaylistCard({ playlist, onOpen, onRename, onDelete }: PlaylistCardProps) {
+export function PlaylistCard({ playlist, onOpen, onCopy, onRename, onDelete }: PlaylistCardProps) {
   const songs = usePlaylistSongs(playlist);
   const active = usePlayer((s) => s.source.kind === "playlist" && s.source.id === playlist.id);
   const seconds = songs.reduce((total, song) => total + songSeconds(song.params), 0);
 
   return (
     <li className={cn("surface flex flex-col gap-3 p-3", active && "border-accent bg-accent/10")}>
-      <button type="button" onClick={onOpen} aria-label={`Open ${playlist.name}`} className="block overflow-hidden rounded-tile transition-opacity hover:opacity-90">
+      <button
+        type="button"
+        onClick={onOpen}
+        aria-label={`Open ${playlist.name}`}
+        className="block overflow-hidden rounded-tile transition-opacity hover:opacity-90"
+      >
         <PlaylistCover songs={songs} className="w-full" />
       </button>
       <div className="min-w-0">
         <h3 className="truncate text-sm font-semibold">{playlist.name}</h3>
+        {playlist.description && <p className="line-clamp-2 text-xs text-text-secondary">{playlist.description}</p>}
         <p className="text-xs text-text-muted">
           {songs.length} {songs.length === 1 ? "song" : "songs"}
           {songs.length > 0 && ` · ${formatDuration(seconds)}`}
@@ -43,12 +51,21 @@ export function PlaylistCard({ playlist, onOpen, onRename, onDelete }: PlaylistC
           Play
         </Button>
         <span className="flex-1" />
-        <Button variant="ghost" size="icon" onClick={onRename} aria-label={`Rename ${playlist.name}`} title="Rename">
-          <Pencil className="h-4 w-4" aria-hidden />
-        </Button>
-        <Button variant="ghost" size="icon" onClick={onDelete} aria-label={`Delete ${playlist.name}`} title="Delete">
-          <Trash2 className="h-4 w-4" aria-hidden />
-        </Button>
+        {onCopy && (
+          <Button variant="ghost" size="icon" onClick={onCopy} aria-label={`Save a copy of ${playlist.name}`} title="Save an editable copy">
+            <Copy className="h-4 w-4" aria-hidden />
+          </Button>
+        )}
+        {onRename && (
+          <Button variant="ghost" size="icon" onClick={onRename} aria-label={`Rename ${playlist.name}`} title="Rename">
+            <Pencil className="h-4 w-4" aria-hidden />
+          </Button>
+        )}
+        {onDelete && (
+          <Button variant="ghost" size="icon" onClick={onDelete} aria-label={`Delete ${playlist.name}`} title="Delete">
+            <Trash2 className="h-4 w-4" aria-hidden />
+          </Button>
+        )}
       </div>
     </li>
   );

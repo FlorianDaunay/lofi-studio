@@ -27,6 +27,9 @@ export const MAX_USER_SONGS = 200;
 export interface Playlist {
   id: string;
   name: string;
+  description: string;
+  /** Built-in playlists ship with the app: they cannot be edited, only copied. */
+  builtIn: boolean;
   /** Ids of songs that exist in the library; a song may appear once. */
   songIds: string[];
   createdAt: number;

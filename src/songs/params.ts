@@ -15,6 +15,7 @@ export const emptyPattern = (): Pattern => ({
   hat: Array<boolean>(STEPS).fill(false),
   bass: Array<boolean>(STEPS).fill(false),
   keys: Array<boolean>(STEPS).fill(false),
+  lead: Array<boolean>(STEPS).fill(false),
 });
 
 export const DEFAULT_PROGRESSION = parseProgression("Dm9 G13 Cmaj7 A7");
@@ -30,10 +31,12 @@ export const DEFAULT_PARAMS: EngineParams = {
     hat: steps("x.x.x.x.x.x.x.x."),
     bass: steps("x..x..x...x....."),
     keys: steps("x......x..x....."),
+    lead: steps("................"),
   },
   progression: DEFAULT_PROGRESSION,
   keys: {
     level: 0.55,
+    voice: "rhodes",
     wave: "sine",
     adsr: { attack: 0.01, decay: 1.2, sustain: 0.25, release: 1.2 },
     cutoff: 2600,
@@ -42,11 +45,15 @@ export const DEFAULT_PARAMS: EngineParams = {
   },
   bass: {
     level: 0.7,
+    voice: "sub",
     wave: "sine",
     adsr: { attack: 0.01, decay: 0.3, sustain: 0.6, release: 0.25 },
     cutoff: 420,
   },
-  drums: { kick: 0.9, snare: 0.7, hat: 0.6 },
+  drums: { kit: "boombap", kick: 0.9, snare: 0.7, hat: 0.6 },
+  // Off by default, so songs saved before these instruments existed sound exactly as they did.
+  pad: { level: 0, voice: "warm", attack: 1.2, cutoff: 1800 },
+  lead: { level: 0, voice: "flute", echo: 0.3 },
   fx: { tone: 5200, wobble: 0.25, warmth: 0.3, reverb: 0.22 },
   ambience: { rain: 0.3, vinyl: 0.4, wind: 0 },
 };

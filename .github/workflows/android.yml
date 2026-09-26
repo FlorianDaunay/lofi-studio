@@ -1,0 +1,111 @@
+name: Android APK
+
+# Builds a signed, installable APK (arm64, armv7, x86, x86_64 in one file).
+# - On a version tag (v*): attaches the APK to that tag's GitHub release, created as a draft.
+# - Manually (Actions > Android APK > Run workflow): the APK is available as a build artifact.
+#
+# Signing: set the repository secrets ANDROID_KEYSTORE_BASE64 (base64 of a .jks file),
+# ANDROID_KEYSTORE_PASSWORD and ANDROID_KEY_ALIAS. Without them the APK is signed with a
+# throwaway key: it installs, but the next build cannot update it in place (uninstall first).
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NDK_VERSION: 28.2.13676358
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Install the Android NDK
+        run: |
+          sdkmanager --install "ndk;${NDK_VERSION}" "platforms;android-36" "build-tools;35.0.0"
+          echo "NDK_HOME=$ANDROID_HOME/ndk/$NDK_VERSION" >> "$GITHUB_ENV"
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Test
+        run: npm run typecheck && npm test
+
+      - name: Prepare signing
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          keystore="$RUNNER_TEMP/release.jks"
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "$KEYSTORE_BASE64" | base64 --decode > "$keystore"
+            password="$KEYSTORE_PASSWORD"
+            alias="$KEY_ALIAS"
+          else
+            echo "::warning::No signing secrets: the APK is signed with a throwaway key and cannot update a previous install."
+            password="$(openssl rand -hex 16)"
+            alias="lofi-studio"
+            keytool -genkeypair -keystore "$keystore" -storepass "$password" -keypass "$password" -alias "$alias" \
+              -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Lofi Studio" -noprompt
+          fi
+          echo "::add-mask::$password"
+          {
+            echo "storeFile=$keystore"
+            echo "password=$password"
+            echo "keyAlias=$alias"
+          } > src-tauri/gen/android/keystore.properties
+
+      - name: Build the APK
+        run: npx tauri android build --apk
+
+      - name: Name the APK
+        id: apk
+        run: |
+          version="$(node -p "require('./package.json').version")"
+          name="lofi-studio-${version}.apk"
+          cp src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release.apk "$name"
+          echo "path=$name" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: ${{ steps.apk.outputs.path }}
+          if-no-files-found: error
+
+      - name: Attach to the draft release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: true
+          files: ${{ steps.apk.outputs.path }}

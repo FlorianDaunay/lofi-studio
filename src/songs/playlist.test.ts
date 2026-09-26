@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { BUILT_IN_SONGS } from "./builtin";
-import { coverScene, sceneDistance } from "./cover";
+import { BUILT_IN_PLAYLISTS } from "./builtin-playlists";
+import { COVER_WORLDS, coverScene, coverWorld, sceneDistance } from "./cover";
+import { planImport, resolvePlaylist } from "./import-plan";
 import { buildQueue, loopsFor, nextInQueue, previousInQueue, shuffleOrder, songSeconds } from "./playback";
 import { pruneSongIds, sanitizePlaylists, withSongAdded, withSongMoved, withSongRemoved } from "./playlists";
 import { MAX_PLAYLIST_SONGS, MAX_PLAYLISTS } from "./types";
@@ -46,8 +48,8 @@ describe("sanitizePlaylists", () => {
       valid,
     );
     expect(result).toEqual([
-      { id: "p1", name: "Night", songIds: ["a", "b"], createdAt: 5 },
-      { id: "p2", name: "Untitled playlist", songIds: [], createdAt: 0 },
+      { id: "p1", name: "Night", description: "", builtIn: false, songIds: ["a", "b"], createdAt: 5 },
+      { id: "p2", name: "Untitled playlist", description: "", builtIn: false, songIds: [], createdAt: 0 },
     ]);
   });
 
@@ -121,11 +123,67 @@ describe("cover scenes", () => {
     }
   });
 
+  it("spread the built-in songs over every world", () => {
+    const counts = Object.fromEntries(
+      COVER_WORLDS.map((world) => [world, BUILT_IN_SONGS.filter((song) => coverWorld(song.params) === world).map((song) => song.name)]),
+    );
+    for (const world of COVER_WORLDS) expect(counts[world]!.length, JSON.stringify(counts)).toBeGreaterThanOrEqual(2);
+  });
+
   it("change a little when a song changes a little, and more for another song", () => {
     const base = BUILT_IN_SONGS[0]!.params;
-    const tweaked = { ...base, bpm: base.bpm + 2, fx: { ...base.fx, warmth: Math.min(1, base.fx.warmth + 0.05) }, ambience: { ...base.ambience, rain: Math.min(1, base.ambience.rain + 0.05) } };
+    const tweaked = {
+      ...base,
+      bpm: base.bpm + 2,
+      fx: { ...base.fx, warmth: Math.min(1, base.fx.warmth + 0.05) },
+      ambience: { ...base.ambience, rain: Math.min(1, base.ambience.rain + 0.05) },
+    };
     const small = sceneDistance(coverScene(base), coverScene(tweaked));
     expect(small).toBeGreaterThan(0);
     for (const other of BUILT_IN_SONGS.slice(1)) expect(sceneDistance(coverScene(base), coverScene(other.params))).toBeGreaterThan(small * 3);
+  });
+});
+
+describe("built-in playlists", () => {
+  it("only reference built-in songs, without repeats, under unique ids", () => {
+    const songIds = new Set(BUILT_IN_SONGS.map((song) => song.id));
+    expect(new Set(BUILT_IN_PLAYLISTS.map((list) => list.id)).size).toBe(BUILT_IN_PLAYLISTS.length);
+    for (const list of BUILT_IN_PLAYLISTS) {
+      expect(list.songIds.length).toBeGreaterThanOrEqual(4);
+      expect(new Set(list.songIds).size).toBe(list.songIds.length);
+      for (const id of list.songIds) expect(songIds.has(id), `${list.name}: ${id}`).toBe(true);
+    }
+  });
+
+  it("put every built-in song in at least one playlist", () => {
+    const listed = new Set(BUILT_IN_PLAYLISTS.flatMap((list) => list.songIds));
+    for (const song of BUILT_IN_SONGS) expect(listed.has(song.id), song.name).toBe(true);
+  });
+});
+
+describe("import plan", () => {
+  const [a, b, c] = BUILT_IN_SONGS.map((song) => ({ name: song.name, description: song.description, params: song.params }));
+  const shared = {
+    songs: [a!, b!, c!],
+    playlists: [{ name: "Mix", description: "", items: [{ song: 1 }, { builtIn: "rainy-study" }, { song: 2 }] }],
+  };
+  const twin = { ...BUILT_IN_SONGS[2]!, id: "mine", builtIn: false };
+
+  it("brings a playlist's songs along and reuses identical songs", () => {
+    const plan = planImport(shared, { songs: new Set([0]), playlists: new Set([0]) }, [twin]);
+    expect(plan.add.map((item) => item.index)).toEqual([0, 1]);
+    expect([...plan.existing]).toEqual([[2, "mine"]]);
+    expect(plan.playlists).toHaveLength(1);
+  });
+
+  it("imports only ticked songs when no playlist is ticked", () => {
+    const plan = planImport(shared, { songs: new Set([2]), playlists: new Set() }, []);
+    expect(plan.add.map((item) => item.index)).toEqual([2]);
+    expect(plan.playlists).toEqual([]);
+  });
+
+  it("maps playlist items to ids, dropping songs that could not be added", () => {
+    const ids = new Map([[1, "x"]]);
+    expect(resolvePlaylist(shared.playlists[0]!, ids)).toEqual(["x", "rainy-study"]);
   });
 });

@@ -28,8 +28,9 @@ export const LEVELS = [
   {
     id: "sound-design",
     title: "Sound design",
-    blurb: "Shape the piano and dirty it up, on purpose.",
+    blurb: "Choose the instruments, shape them, dirty them up.",
     lessons: [
+      { id: "instruments", title: "Pick your band", summary: "Five instruments, each with a choice of voices." },
       { id: "adsr", title: "Shape a note", summary: "Attack, decay, sustain, release." },
       { id: "filter-lfo", title: "Filter and wobble", summary: "A knob that turns by itself." },
       { id: "lofi-fx", title: "The lo-fi recipe", summary: "Muffle, wobble, warmth and room." },

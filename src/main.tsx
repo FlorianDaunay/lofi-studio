@@ -4,6 +4,7 @@ import App from "./App";
 import "./index.css";
 import { startBridge } from "./state/bridge";
 import { restoreConfig, startAutosave } from "./state/persist";
+import { startHistorySync } from "./state/navigation";
 import { startPlayback } from "./state/playback";
 import "./themes"; // applies the saved theme before the first paint of the app
 
@@ -13,10 +14,12 @@ function Root() {
     const stopBridge = startBridge();
     const stopAutosave = startAutosave();
     const stopPlayback = startPlayback();
+    const stopHistorySync = startHistorySync();
     return () => {
       stopBridge();
       stopAutosave();
       stopPlayback();
+      stopHistorySync();
     };
   }, []);
   return <App />;

@@ -1,4 +1,17 @@
-import { CHORD_QUALITIES, STEPS, TRACKS, WAVEFORMS, type Chord, type EngineParams, type Pattern } from "@/audio/types";
+import {
+  BASS_VOICES,
+  CHORD_QUALITIES,
+  DRUM_KITS,
+  KEYS_VOICES,
+  LEAD_VOICES,
+  PAD_VOICES,
+  STEPS,
+  TRACKS,
+  WAVEFORMS,
+  type Chord,
+  type EngineParams,
+  type Pattern,
+} from "@/audio/types";
 import { DEFAULT_PARAMS } from "./params";
 import { RANGES, clamp } from "./ranges";
 import { MAX_SONG_DESCRIPTION, MAX_SONG_NAME, type SongDraft, type SongParams } from "./types";
@@ -57,6 +70,8 @@ export function sanitizeParams(raw: unknown, d: EngineParams = DEFAULT_PARAMS): 
   const keys = isRecord(r.keys) ? r.keys : {};
   const bass = isRecord(r.bass) ? r.bass : {};
   const drums = isRecord(r.drums) ? r.drums : {};
+  const pad = isRecord(r.pad) ? r.pad : {};
+  const lead = isRecord(r.lead) ? r.lead : {};
   const fx = isRecord(r.fx) ? r.fx : {};
   const amb = isRecord(r.ambience) ? r.ambience : {};
   return {
@@ -68,6 +83,7 @@ export function sanitizeParams(raw: unknown, d: EngineParams = DEFAULT_PARAMS): 
     progression: progression(r.progression, d.progression),
     keys: {
       level: num(keys.level, d.keys.level, RANGES.level),
+      voice: oneOf(keys.voice, KEYS_VOICES, d.keys.voice),
       wave: oneOf(keys.wave, WAVEFORMS, d.keys.wave),
       adsr: adsr(keys.adsr, d.keys.adsr),
       cutoff: num(keys.cutoff, d.keys.cutoff, RANGES.keysCutoff),
@@ -76,14 +92,27 @@ export function sanitizeParams(raw: unknown, d: EngineParams = DEFAULT_PARAMS): 
     },
     bass: {
       level: num(bass.level, d.bass.level, RANGES.level),
+      voice: oneOf(bass.voice, BASS_VOICES, d.bass.voice),
       wave: oneOf(bass.wave, WAVEFORMS, d.bass.wave),
       adsr: adsr(bass.adsr, d.bass.adsr),
       cutoff: num(bass.cutoff, d.bass.cutoff, RANGES.bassCutoff),
     },
     drums: {
+      kit: oneOf(drums.kit, DRUM_KITS, d.drums.kit),
       kick: num(drums.kick, d.drums.kick, RANGES.level),
       snare: num(drums.snare, d.drums.snare, RANGES.level),
       hat: num(drums.hat, d.drums.hat, RANGES.level),
+    },
+    pad: {
+      level: num(pad.level, d.pad.level, RANGES.level),
+      voice: oneOf(pad.voice, PAD_VOICES, d.pad.voice),
+      attack: num(pad.attack, d.pad.attack, RANGES.padAttack),
+      cutoff: num(pad.cutoff, d.pad.cutoff, RANGES.padCutoff),
+    },
+    lead: {
+      level: num(lead.level, d.lead.level, RANGES.level),
+      voice: oneOf(lead.voice, LEAD_VOICES, d.lead.voice),
+      echo: num(lead.echo, d.lead.echo, RANGES.amount),
     },
     fx: {
       tone: num(fx.tone, d.fx.tone, RANGES.tone),

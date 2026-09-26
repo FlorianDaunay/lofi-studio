@@ -3,7 +3,7 @@ import { useId, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { coverScene } from "@/songs/cover";
 import type { Song } from "@/songs/types";
-import { CoverScenery } from "./CoverScenery";
+import { CoverScenery } from "./cover/CoverScenery";
 
 /** More slices than this would be too thin to tell apart. */
 const MAX_SLICES = 5;

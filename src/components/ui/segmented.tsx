@@ -19,14 +19,14 @@ export function Segmented<T extends string>({ label, value, options, onChange }:
         aria-label={label}
         // Radix reports "" when the active item is clicked again: ignore, one option stays selected.
         onValueChange={(next) => next && onChange(next as T)}
-        className="inline-flex gap-1 rounded-control border bg-canvas p-0.5"
+        className="flex flex-wrap gap-1 rounded-control border bg-canvas p-0.5"
       >
         {options.map((option) => (
           <ToggleGroup.Item
             key={option.value}
             value={option.value}
             className={cn(
-              "flex-1 rounded-control px-2.5 py-1 text-xs text-text-secondary transition-colors hover:text-text-primary",
+              "flex-1 whitespace-nowrap rounded-control px-2.5 py-1 text-xs text-text-secondary transition-colors hover:text-text-primary",
               "data-[state=on]:bg-accent data-[state=on]:text-accent-foreground",
             )}
           >

@@ -42,7 +42,8 @@ export function LibraryPage() {
 
   const exportSong = async (song: Song) => {
     try {
-      const saved = await saveTextFile(shareFileName([song]), toShareFile([song]));
+      const selection = { songs: [song], playlists: [] };
+      const saved = await saveTextFile(shareFileName(selection), toShareFile(selection));
       if (saved) setNotice(`Exported “${song.name}”.`);
     } catch (error) {
       setNotice(`Could not export: ${error instanceof Error ? error.message : String(error)}`);

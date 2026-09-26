@@ -1,7 +1,10 @@
 import { Button } from "@/components/ui/button";
+import { Segmented } from "@/components/ui/segmented";
 import { Slider } from "@/components/ui/slider";
 import { AdsrEditor } from "@/components/studio/AdsrEditor";
 import { EffectsControls } from "@/components/studio/AdvancedPanels";
+import { KEYS_VOICE_OPTIONS, LEAD_VOICE_OPTIONS, PAD_VOICE_OPTIONS } from "@/components/studio/instrument-labels";
+import { steps } from "@/songs/params";
 import { RANGES } from "@/songs/ranges";
 import { useStudio } from "@/state/studio";
 import { LfoScope } from "../LfoScope";
@@ -22,6 +25,72 @@ const SHAPES = [
   { name: "Soft pad", text: "Fades in, glows", adsr: { attack: 0.4, decay: 1, sustain: 0.7, release: 2 } },
   { name: "Organ", text: "On and off", adsr: { attack: 0.01, decay: 0.1, sustain: 1, release: 0.1 } },
 ] as const;
+
+/** A melody to start from: a few notes on the off-beats, so it answers the chords instead of doubling them. */
+const STARTER_MELODY = steps("x..x..x...x.x...");
+
+export function Instruments() {
+  const keysVoice = useStudio((s) => s.params.keys.voice);
+  const pad = useStudio((s) => s.params.pad);
+  const lead = useStudio((s) => s.params.lead);
+  const hasMelody = useStudio((s) => s.params.pattern.lead.some(Boolean));
+  const setSection = useStudio((s) => s.setSection);
+  const setPattern = useStudio((s) => s.setPattern);
+  const addMelody = () => {
+    const { pattern } = useStudio.getState().params;
+    setPattern({ ...pattern, lead: STARTER_MELODY });
+    if (lead.level === 0) setSection("lead", { level: 0.4 });
+  };
+  return (
+    <>
+      <P>
+        A song here is played by a small band of five: <Term>keys</Term> play the chords, the <Term>bass</Term> plays their root, the <Term>drums</Term> keep
+        time, a <Term>pad</Term> holds long soft chords underneath, and a <Term>melody</Term> picks notes from each chord to make a tune.
+      </P>
+      <P>
+        Each instrument has a few <Term>voices</Term>: the same notes, synthesized a different way. Swapping the keys from electric piano to guitar changes the
+        whole mood without touching a single chord.
+      </P>
+      <Try title="Swap the band">
+        <PlayChip />
+        <Segmented label="Keys voice" value={keysVoice} options={KEYS_VOICE_OPTIONS} onChange={(voice) => setSection("keys", { voice })} />
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="flex flex-col gap-3">
+            <Segmented label="Pad voice" value={pad.voice} options={PAD_VOICE_OPTIONS} onChange={(voice) => setSection("pad", { voice })} />
+            <Slider
+              label="Pad level"
+              {...RANGES.level}
+              value={pad.level}
+              format={(v) => (v === 0 ? "Off" : `${Math.round(v * 100)}%`)}
+              onChange={(level) => setSection("pad", { level })}
+            />
+          </div>
+          <div className="flex flex-col gap-3">
+            <Segmented label="Melody voice" value={lead.voice} options={LEAD_VOICE_OPTIONS} onChange={(voice) => setSection("lead", { voice })} />
+            <Slider
+              label="Melody level"
+              {...RANGES.level}
+              value={lead.level}
+              format={(v) => (v === 0 ? "Off" : `${Math.round(v * 100)}%`)}
+              onChange={(level) => setSection("lead", { level })}
+            />
+          </div>
+        </div>
+        {!hasMelody && (
+          <div>
+            <Button size="sm" onClick={addMelody}>
+              Write a starter melody
+            </Button>
+          </div>
+        )}
+      </Try>
+      <Tip>
+        The melody plays on its own row of the step sequencer, <Term>Melody</Term>. Every step you light up plays the next note of a rise-and-fall shape, always
+        taken from the chord of that bar, so it can never sound wrong.
+      </Tip>
+    </>
+  );
+}
 
 export function Adsr() {
   const adsr = useStudio((s) => s.params.keys.adsr);

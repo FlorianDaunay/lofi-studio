@@ -1,5 +1,4 @@
-import type { Chord, EngineParams, Pattern, Waveform } from "@/audio/types";
-import { STEPS } from "@/audio/types";
+import { BASS_VOICES, DRUM_KITS, KEYS_VOICES, LEAD_VOICES, PAD_VOICES, STEPS, type Chord, type EngineParams, type Pattern, type Waveform } from "@/audio/types";
 import { parseProgression } from "./chords";
 import { emptyPattern } from "./params";
 
@@ -62,12 +61,15 @@ export function randomPattern(rng: Rng = Math.random): Pattern {
 
   p.keys[0] = true;
   maybe([6, 7, 10], 0.4, p.keys);
+
+  // A short motif: only heard when the melody instrument is turned up.
+  maybe([0, 3, 6, 8, 10, 12, 14], 0.35, p.lead);
   return p;
 }
 
 const SOFT_WAVES: readonly Waveform[] = ["sine", "triangle"];
 
-/** Timbre, effects and ambience within a soft, warm range. Levels and envelopes are left alone. */
+/** Timbre (voices included), effects and ambience within a soft, warm range. Levels and envelopes are left alone. */
 function randomSound(p: EngineParams, rng: Rng): EngineParams {
   // One or two ambience layers, at a moderate level.
   const layers = ["rain", "vinyl", "wind"] as const;
@@ -81,11 +83,16 @@ function randomSound(p: EngineParams, rng: Rng): EngineParams {
     ...p,
     keys: {
       ...p.keys,
+      voice: pickOne(rng, KEYS_VOICES),
       wave: pickOne(rng, SOFT_WAVES),
       cutoff: integer(rng, 1800, 3600),
       lfoRate: between(rng, 0.1, 0.8),
       lfoDepth: between(rng, 0.2, 0.6),
     },
+    bass: { ...p.bass, voice: pickOne(rng, BASS_VOICES) },
+    drums: { ...p.drums, kit: pickOne(rng, DRUM_KITS) },
+    pad: { ...p.pad, voice: pickOne(rng, PAD_VOICES) },
+    lead: { ...p.lead, voice: pickOne(rng, LEAD_VOICES) },
     fx: {
       tone: integer(rng, 3500, 6000),
       wobble: between(rng, 0.15, 0.55),

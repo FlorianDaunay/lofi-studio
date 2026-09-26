@@ -2,7 +2,7 @@ import { memo, useId, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { coverScene } from "@/songs/cover";
 import type { SongParams } from "@/songs/types";
-import { CoverScenery } from "./CoverScenery";
+import { CoverScenery } from "./cover/CoverScenery";
 
 interface SongCoverProps {
   params: SongParams;

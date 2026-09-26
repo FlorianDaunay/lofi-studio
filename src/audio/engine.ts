@@ -1,7 +1,7 @@
 import * as Tone from "tone";
 import { Rain, Vinyl, Wind } from "./ambience";
-import { Bass, Drums, Keys } from "./instruments";
-import { bassFrequency, chordFrequencies } from "./music";
+import { Bass, Drums, Keys, Lead, Pad } from "./instruments";
+import { bassFrequency, chordFrequencies, leadMidi, midiToHz } from "./music";
 import { STEPS, type EngineParams } from "./types";
 
 /** Every node the engine owns, created together on first play and disposed together. */
@@ -9,6 +9,8 @@ interface Graph {
   keys: Keys;
   bass: Bass;
   drums: Drums;
+  pad: Pad;
+  lead: Lead;
   rain: Rain;
   vinyl: Vinyl;
   wind: Wind;
@@ -101,6 +103,7 @@ export class AudioEngine {
     this.shutdownTimer = setTimeout(() => {
       Tone.getTransport().stop();
       graph.keys.releaseAll();
+      graph.pad.releaseAll();
       for (const layer of [graph.rain, graph.vinyl, graph.wind]) layer.setRunning(false);
       this.shutdownTimer = setTimeout(() => {
         if (!this.playing) void (Tone.getContext().rawContext as AudioContext).suspend();
@@ -125,6 +128,8 @@ export class AudioEngine {
     graph.keys.dispose();
     graph.bass.dispose();
     graph.drums.dispose();
+    graph.pad.dispose();
+    graph.lead.dispose();
     graph.rain.dispose();
     graph.vinyl.dispose();
     graph.wind.dispose();
@@ -150,6 +155,8 @@ export class AudioEngine {
     const keys = new Keys();
     const bass = new Bass();
     const drums = new Drums();
+    const pad = new Pad();
+    const lead = new Lead();
     const rain = new Rain();
     const vinyl = new Vinyl();
     const wind = new Wind();
@@ -164,7 +171,7 @@ export class AudioEngine {
     const limiter = new Tone.Limiter(-1);
 
     // Music runs through the lo-fi chain; ambience joins after it so rain keeps its highs.
-    for (const instrument of [keys, bass, drums]) instrument.output.connect(mix);
+    for (const instrument of [keys, bass, drums, pad, lead]) instrument.output.connect(mix);
     mix.chain(reverb, warmth, tone, wobble, compressor, master);
     for (const layer of [rain, vinyl, wind]) layer.output.connect(master);
     master.chain(limiter, Tone.getDestination());
@@ -174,7 +181,7 @@ export class AudioEngine {
     transport.swingSubdivision = "16n";
     const loop = new Tone.Loop((time) => this.tick(time), "16n").start(0);
 
-    const graph: Graph = { keys, bass, drums, rain, vinyl, wind, mix, reverb, warmth, tone, wobble, compressor, master, limiter, loop };
+    const graph: Graph = { keys, bass, drums, pad, lead, rain, vinyl, wind, mix, reverb, warmth, tone, wobble, compressor, master, limiter, loop };
     this.graph = graph;
     if (this.params) this.apply(graph, this.params, undefined);
 
@@ -190,7 +197,10 @@ export class AudioEngine {
 
   private apply(graph: Graph, next: EngineParams, prev: EngineParams | undefined) {
     const transport = Tone.getTransport();
-    if (next.bpm !== prev?.bpm) transport.bpm.value = next.bpm;
+    if (next.bpm !== prev?.bpm) {
+      transport.bpm.value = next.bpm;
+      graph.lead.setTempo(next.bpm);
+    }
     if (next.swing !== prev?.swing) transport.swing = next.swing * 0.6;
     if (next.volume !== prev?.volume && this.playing) graph.master.gain.rampTo(masterGain(next.volume), 0.05);
 
@@ -205,6 +215,8 @@ export class AudioEngine {
     if (next.keys !== prev?.keys) graph.keys.apply(next.keys);
     if (next.bass !== prev?.bass) graph.bass.apply(next.bass);
     if (next.drums !== prev?.drums) graph.drums.apply(next.drums);
+    if (next.pad !== prev?.pad) graph.pad.apply(next.pad);
+    if (next.lead !== prev?.lead) graph.lead.apply(next.lead);
     if (next.ambience !== prev?.ambience) {
       graph.rain.setLevel(next.ambience.rain);
       graph.vinyl.setLevel(next.ambience.vinyl);
@@ -238,8 +250,15 @@ export class AudioEngine {
       const strum = 0.008 + loose * 0.02;
       const base = at();
       chordFrequencies(chord).forEach((frequency, i) => {
-        graph.keys.play([frequency], stepSeconds * 4, base + i * strum, velocity(0.55 - i * 0.03));
+        graph.keys.play(frequency, stepSeconds * 4, base + i * strum, velocity(0.55 - i * 0.03));
       });
+    }
+    // The pad holds each chord for the whole bar; silent pads cost nothing.
+    if (chord && step === 0 && graph.pad.level > 0.01) {
+      graph.pad.play(chordFrequencies(chord, graph.pad.octave), stepSeconds * STEPS * 0.98, time);
+    }
+    if (chord && on("lead") && graph.lead.level > 0.01) {
+      graph.lead.play(midiToHz(leadMidi(chord, step)), stepSeconds * 1.6, at(), velocity(0.7));
     }
 
     Tone.getDraw().schedule(() => this.stepListener?.(step, bar), time);

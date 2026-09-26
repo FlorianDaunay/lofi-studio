@@ -3,6 +3,7 @@ import { useState } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { LESSON_BODIES } from "@/components/learn/lesson-bodies";
 import { Button } from "@/components/ui/button";
+import { Select } from "@/components/ui/select";
 import { LESSONS, LEVELS, type LessonId } from "@/learn/curriculum";
 import { cn } from "@/lib/utils";
 import { useLearning } from "@/state/learning";
@@ -40,7 +41,20 @@ export function LearnPage() {
       </div>
 
       <div className="grid items-start gap-5 lg:grid-cols-[16rem_1fr]">
-        <nav aria-label="Lessons" className="flex flex-col gap-4">
+        {/* Phones: the list of lessons would push the lesson off screen, a picker takes one line. */}
+        <Select label="Lesson" value={lessonId} onChange={(event) => setLessonId(event.target.value as LessonId)} className="h-11 lg:hidden">
+          {LEVELS.map((lv, levelIndex) => (
+            <optgroup key={lv.id} label={`Level ${levelIndex + 1} · ${lv.title}`}>
+              {lv.lessons.map((l) => (
+                <option key={l.id} value={l.id}>
+                  {done.includes(l.id) ? "✓ " : ""}
+                  {l.title}
+                </option>
+              ))}
+            </optgroup>
+          ))}
+        </Select>
+        <nav aria-label="Lessons" className="hidden flex-col gap-4 lg:flex">
           {LEVELS.map((lv, levelIndex) => (
             <section key={lv.id}>
               <h2 className="mb-1.5 px-1 text-xs font-medium uppercase tracking-wider text-text-muted">
@@ -78,7 +92,7 @@ export function LearnPage() {
           ))}
         </nav>
 
-        <article key={lesson.id} aria-label={lesson.title} className="surface flex flex-col gap-5 p-6">
+        <article key={lesson.id} aria-label={lesson.title} className="surface flex min-w-0 flex-col gap-5 p-4 sm:p-6">
           <header>
             <p className="text-xs uppercase tracking-wider text-accent">
               Level {lesson.levelIndex + 1} · {level.title} · Lesson {lesson.indexInLevel + 1} of {level.lessons.length}

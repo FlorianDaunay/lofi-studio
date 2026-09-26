@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import type { Song } from "@/songs/types";
 import type { Playlist } from "@/songs/types";
-import { allSongs, findSong, useLibrary } from "./library";
+import { allPlaylists, allSongs, findSong, useLibrary } from "./library";
 import { useStudio } from "./studio";
 
 /** Every song the user can pick: built-ins first, then their own. */
@@ -21,4 +21,10 @@ export function useCurrentSong(): Song | undefined {
 export function usePlaylistSongs(playlist: Playlist): Song[] {
   const songs = useLibrary((s) => s.songs);
   return useMemo(() => playlist.songIds.flatMap((id) => findSong(songs, id) ?? []), [songs, playlist.songIds]);
+}
+
+/** Every playlist: the user's, then the built-in ones. */
+export function useAllPlaylists(): Playlist[] {
+  const playlists = useLibrary((s) => s.playlists);
+  return useMemo(() => allPlaylists(playlists), [playlists]);
 }

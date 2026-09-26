@@ -23,7 +23,8 @@ export function FirstLoop() {
       <P>Here is the road the sound travels, from the instruments to your speakers. Click a stage to see what it does.</P>
       <SignalFlow />
       <Tip>
-        The <Term>Play</Term> button also lives at the bottom of the left sidebar, so you can start and stop from any page.
+        The <Term>Play</Term> button also lives in the player bar (the sidebar on a computer, the bottom of the screen on a phone), so you can start and stop
+        from any page.
       </Tip>
     </>
   );

@@ -107,6 +107,8 @@ export function Groove() {
                   hat: steps(example.pattern.hat),
                   bass: steps(example.pattern.bass),
                   keys: steps(example.pattern.keys),
+                  // The examples are drum-and-chord grooves: the melody row is left as it is.
+                  lead: useStudio.getState().params.pattern.lead,
                 })
               }
             >

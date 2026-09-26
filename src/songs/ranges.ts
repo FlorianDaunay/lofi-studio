@@ -13,6 +13,8 @@ export const RANGES = {
   bassCutoff: { min: 80, max: 1500, step: 5 },
   lfoRate: { min: 0.05, max: 8, step: 0.05 },
   lfoDepth: { min: 0, max: 1, step: 0.01 },
+  padAttack: { min: 0.05, max: 4, step: 0.05 },
+  padCutoff: { min: 300, max: 6000, step: 10 },
   tone: { min: 500, max: 12000, step: 50 },
   amount: { min: 0, max: 1, step: 0.01 },
 } as const;

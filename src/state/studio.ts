@@ -5,7 +5,7 @@ import { randomize, type RandomizeKind } from "@/songs/randomize";
 import type { Song, SongParams } from "@/songs/types";
 import { DEFAULT_PANELS, type PanelId } from "./config";
 
-type Section = "keys" | "bass" | "drums" | "fx" | "ambience";
+type Section = "keys" | "bass" | "drums" | "pad" | "lead" | "fx" | "ambience";
 type Global = Pick<EngineParams, "bpm" | "swing" | "humanize" | "volume">;
 
 /** What is saved of the studio between sessions. */

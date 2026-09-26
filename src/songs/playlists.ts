@@ -1,5 +1,5 @@
 import { isRecord } from "./sanitize";
-import { MAX_PLAYLIST_SONGS, MAX_PLAYLISTS, MAX_SONG_NAME, type Playlist } from "./types";
+import { MAX_PLAYLIST_SONGS, MAX_PLAYLISTS, MAX_SONG_DESCRIPTION, MAX_SONG_NAME, type Playlist } from "./types";
 
 /** Adds a song at the end unless it is already there or the playlist is full. */
 export const withSongAdded = (songIds: readonly string[], id: string): string[] =>
@@ -17,9 +17,8 @@ export function withSongMoved(songIds: readonly string[], from: number, to: numb
 }
 
 /** Keeps only ids that exist, without duplicates (a song may have been deleted or an id forged). */
-export const pruneSongIds = (songIds: readonly unknown[], valid: ReadonlySet<string>): string[] => [
-  ...new Set(songIds.filter((id): id is string => typeof id === "string" && valid.has(id))),
-].slice(0, MAX_PLAYLIST_SONGS);
+export const pruneSongIds = (songIds: readonly unknown[], valid: ReadonlySet<string>): string[] =>
+  [...new Set(songIds.filter((id): id is string => typeof id === "string" && valid.has(id)))].slice(0, MAX_PLAYLIST_SONGS);
 
 /** Playlists read from the config file: untrusted, so rebuilt field by field. */
 export function sanitizePlaylists(raw: unknown, validSongIds: readonly string[]): Playlist[] {
@@ -36,6 +35,8 @@ export function sanitizePlaylists(raw: unknown, validSongIds: readonly string[])
     playlists.push({
       id,
       name,
+      description: typeof item.description === "string" ? item.description.trim().slice(0, MAX_SONG_DESCRIPTION) : "",
+      builtIn: false,
       songIds: pruneSongIds(Array.isArray(item.songIds) ? item.songIds : [], valid),
       createdAt: typeof item.createdAt === "number" && Number.isFinite(item.createdAt) ? item.createdAt : 0,
     });

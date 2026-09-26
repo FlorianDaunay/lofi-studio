@@ -29,7 +29,7 @@ export function Slider({ label, value, onChange, min, max, step, format, compact
         </div>
       )}
       <SliderPrimitive.Root
-        className="relative flex h-5 w-full touch-none select-none items-center"
+        className="relative flex h-5 w-full touch-none select-none items-center [@media(pointer:coarse)]:h-8"
         value={[value]}
         min={min}
         max={max}
@@ -42,7 +42,7 @@ export function Slider({ label, value, onChange, min, max, step, format, compact
         <SliderPrimitive.Thumb
           aria-label={label}
           aria-valuetext={format ? format(value) : undefined}
-          className="block h-4 w-4 rounded-pill border bg-accent shadow-control transition-transform hover:scale-110"
+          className="block h-4 w-4 rounded-pill border bg-accent shadow-control transition-transform hover:scale-110 [@media(pointer:coarse)]:h-6 [@media(pointer:coarse)]:w-6"
         />
       </SliderPrimitive.Root>
     </div>

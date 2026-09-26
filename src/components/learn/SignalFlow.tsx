@@ -3,7 +3,7 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 
 const STAGES = [
-  { id: "instruments", label: "Instruments", text: "A piano-like synth, a bass and three drum sounds, all calculated on the fly from waves and noise." },
+  { id: "instruments", label: "Instruments", text: "Keys, bass, drums, a pad and a melody, all calculated on the fly from waves and noise." },
   { id: "room", label: "Room", text: "Reverb: a short echo that makes the sound feel like it happens in a small space." },
   { id: "warmth", label: "Warmth", text: "A touch of soft distortion, like an amplifier working a little too hard." },
   { id: "muffle", label: "Muffle", text: "A low-pass filter cuts the high frequencies, which is why lo-fi sounds like it comes from behind a wall." },
