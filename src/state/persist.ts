@@ -1,6 +1,7 @@
 import { loadConfig, saveConfig } from "@/lib/persistence";
 import { useLearning } from "./learning";
 import { useLibrary } from "./library";
+import { usePlayer } from "./player";
 import type { PersistedConfig } from "./config";
 import { useStudio } from "./studio";
 
@@ -10,7 +11,8 @@ const SAVE_DELAY_MS = 500;
 export async function restoreConfig(): Promise<void> {
   const saved = await loadConfig();
   if (!saved) return;
-  useLibrary.getState().hydrate(saved.songs, saved.pinned);
+  useLibrary.getState().hydrate(saved.songs, saved.pinned, saved.playlists);
+  usePlayer.getState().set(saved.player);
   useLearning.getState().hydrate(saved.learned);
   const { params, songId, dirty, panels } = saved;
   useStudio.getState().hydrate({ params, songId, dirty, panels });
@@ -18,9 +20,10 @@ export async function restoreConfig(): Promise<void> {
 
 function snapshot(): PersistedConfig {
   const { params, songId, dirty, panels } = useStudio.getState();
-  const { songs, pinned } = useLibrary.getState();
+  const { songs, pinned, playlists } = useLibrary.getState();
+  const { source, shuffle, repeat } = usePlayer.getState();
   const learned = useLearning.getState().done;
-  return { version: 2, params, songId, dirty, panels, songs, pinned, learned };
+  return { version: 2, params, songId, dirty, panels, songs, pinned, playlists, player: { source, shuffle, repeat }, learned };
 }
 
 /**
@@ -48,6 +51,9 @@ export function startAutosave(): () => void {
     if (s.params !== prev.params || s.songId !== prev.songId || s.dirty !== prev.dirty || s.panels !== prev.panels) schedule();
   });
   const unsubscribeLibrary = useLibrary.subscribe(schedule);
+  const unsubscribePlayer = usePlayer.subscribe((s, prev) => {
+    if (s.source !== prev.source || s.shuffle !== prev.shuffle || s.repeat !== prev.repeat) schedule();
+  });
   const unsubscribeLearning = useLearning.subscribe(schedule);
   window.addEventListener("pagehide", flushPending);
   document.addEventListener("visibilitychange", flushPending);
@@ -56,6 +62,7 @@ export function startAutosave(): () => void {
     unsubscribeStudio();
     unsubscribeLibrary();
     unsubscribeLearning();
+    unsubscribePlayer();
     window.removeEventListener("pagehide", flushPending);
     document.removeEventListener("visibilitychange", flushPending);
     flushPending();

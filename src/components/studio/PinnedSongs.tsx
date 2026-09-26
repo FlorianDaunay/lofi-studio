@@ -1,7 +1,7 @@
 import { ArrowLeftRight } from "lucide-react";
 import { useState } from "react";
 import { SongPicker } from "@/components/library/SongPicker";
-import { songIcon } from "@/components/library/song-display";
+import { SongCover } from "@/components/library/SongCover";
 import { cn } from "@/lib/utils";
 import { findSong, useLibrary } from "@/state/library";
 import { useStudio } from "@/state/studio";
@@ -21,7 +21,6 @@ export function PinnedSongs() {
         {pinned.map((id, slot) => {
           const song = findSong(userSongs, id);
           if (!song) return null;
-          const Icon = songIcon(song);
           const selected = song.id === songId;
           return (
             <li key={slot} className="relative">
@@ -34,15 +33,7 @@ export function PinnedSongs() {
                   selected && "border-accent bg-accent/10",
                 )}
               >
-                <span
-                  className={cn(
-                    "flex h-9 w-9 items-center justify-center rounded-tile",
-                    selected ? "bg-accent text-accent-foreground" : "bg-surface-hover text-accent",
-                  )}
-                  aria-hidden
-                >
-                  <Icon className="h-5 w-5" />
-                </span>
+                <SongCover params={song.params} className="w-14" />
                 <span className="min-w-0 max-w-full">
                   <span className="block truncate text-sm font-medium">{song.name}</span>
                   <span className="block truncate text-xs text-text-muted">

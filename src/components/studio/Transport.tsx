@@ -1,6 +1,8 @@
 import { LoaderCircle, Play, Save, Square } from "lucide-react";
 import { useState } from "react";
+import { SongCover } from "@/components/library/SongCover";
 import { SongForm } from "@/components/library/SongForm";
+import { PlayerControls } from "@/components/player/PlayerControls";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { RANGES } from "@/songs/ranges";
@@ -17,6 +19,7 @@ export function Transport() {
   const dirty = useStudio((s) => s.dirty);
   const bpm = useStudio((s) => s.params.bpm);
   const volume = useStudio((s) => s.params.volume);
+  const params = useStudio((s) => s.params);
   const setGlobal = useStudio((s) => s.setGlobal);
   const song = useCurrentSong();
   const [saving, setSaving] = useState(false);
@@ -40,6 +43,9 @@ export function Transport() {
           <Play className="ml-0.5 h-7 w-7 fill-current" aria-hidden />
         )}
       </Button>
+
+      {/* Live: the cover follows every tweak of the sound, saved or not. */}
+      <SongCover params={params} className="hidden w-20 shrink-0 sm:block" />
 
       <div className="min-w-40 flex-1">
         <p className="text-xs uppercase tracking-wider text-text-muted">{playing ? "Now playing" : "Ready"}</p>
@@ -77,6 +83,8 @@ export function Transport() {
           </Button>
         </div>
       </div>
+
+      <PlayerControls className="w-full border-t pt-4" />
 
       <SongForm
         open={saving}

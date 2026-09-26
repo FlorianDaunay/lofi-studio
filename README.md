@@ -13,6 +13,9 @@ Tauri 2 (Rust) · React 19 · TypeScript · Zustand · Tone.js · Tailwind 3 + R
 - **Two levels of control.** Minimal by default; expandable panels for the 16-step sequencer (tempo, swing, humanize), a **chord editor** (one chord per bar, up to eight bars, ready-made progressions), instruments (waveforms, ADSR envelopes, filters, LFO) and lo-fi effects (tape wobble, warmth, reverb, master low-pass).
 - **Randomize menu.** New groove, new chords, new sound or "Surprise me", each drawn from musically safe choices (curated jazzy progressions, soft ranges), never touching volume or levels. Up to five undos.
 - **Library.** Save any sound as a song, rename it, pin it, delete it. Built-in songs can be copied.
+- **Playlists.** Group any songs (built-in or yours), reorder them, and play them from the Playlists page or the Studio.
+- **Player.** Previous / next, shuffle, repeat (off, all, this song) and a source picker (whole library or one playlist). Songs loop until they last about two minutes, then the next one starts; auto-advance never replaces a sound with unsaved edits.
+- **Generated covers.** Every song gets its own cover, drawn from its params (key, tempo, tone, ambience, the 16-step pattern, one skyline building per chord...), so songs that sound alike look alike. A playlist cover is a strip of slices cut from its songs' covers. Nothing is stored: covers are recomputed.
 - **Import / export.** Share songs as a `.lofi.json` file or as a short text code you can paste in a chat.
 - **Interactive tutorial.** Thirteen short lessons in four levels, from the first loop to sharing songs. Every lesson embeds the real controls plus a live diagram (signal path, swing, piano keys of the current chord, filter wobble), and progress is remembered.
 - **59 themes** with live previews, searchable, light/dark, optional "match system".
@@ -20,6 +23,10 @@ Tauri 2 (Rust) · React 19 · TypeScript · Zustand · Tone.js · Tailwind 3 + R
 | Library | Import / Export |
 | --- | --- |
 | ![Library](docs/screenshots/library.png) | ![Import and export](docs/screenshots/share.png) |
+
+| Playlists | Playlist |
+| --- | --- |
+| ![Playlists](docs/screenshots/playlists.png) | ![One playlist](docs/screenshots/playlist-detail.png) |
 
 | Appearance | Another theme |
 | --- | --- |
@@ -33,9 +40,10 @@ Tauri 2 (Rust) · React 19 · TypeScript · Zustand · Tone.js · Tailwind 3 + R
 
 1. **Studio**: press play, click a pinned song, add rain or vinyl. Open *Advanced* to edit the groove, the chords and the instruments. Once you changed something, *Save* updates your song, *Save as…* stores a new one.
 2. **Library**: all your songs and the built-in ones. The pin button assigns a song to one of the four Studio slots.
-3. **Import / Export**: tick songs, then *Save file…* or *Copy share code*. To import, open a file or paste a code; imported songs are added to *My songs* and never overwrite anything.
-4. **Learn**: start at level 1 if music is new to you; each lesson is hands-on.
-5. **Appearance** (bottom of the sidebar): pick a theme.
+3. **Playlists**: create one here or with the playlist button on any song, add and reorder songs, then press *Play*. The Studio has previous / next, shuffle, repeat and the source picker.
+4. **Import / Export**: tick songs, then *Save file…* or *Copy share code*. To import, open a file or paste a code; imported songs are added to *My songs* and never overwrite anything.
+5. **Learn**: start at level 1 if music is new to you; each lesson is hands-on.
+6. **Appearance** (bottom of the sidebar): pick a theme.
 
 ## Run
 
@@ -58,10 +66,10 @@ cd src-tauri && cargo test         # Rust
 | Path | Role |
 | --- | --- |
 | `src/audio/` | `AudioEngine` and its parts (instruments, ambience, procedural noise, music helpers). No React, no store: it receives an immutable `EngineParams` snapshot. |
-| `src/songs/` | The song domain: types, defaults, built-in songs, sanitizers for untrusted input, share format. Pure TypeScript, unit-tested. |
-| `src/state/` | Zustand stores (studio, library, navigation), cross-store actions, persistence and audio wiring. |
+| `src/songs/` | The song domain: types, defaults, built-in songs, playlists, play queue, cover art scenes, sanitizers for untrusted input, share format. Pure TypeScript, unit-tested. |
+| `src/state/` | Zustand stores (studio, library, player, navigation), the queue / auto-advance logic (`playback.ts`), cross-store actions, persistence and audio wiring. |
 | `src/learn/` | The tutorial curriculum (levels and lesson ids). The lesson bodies live in `src/components/learn/`. |
-| `src/pages/`, `src/components/` | Pages (Studio, Library, Import/Export, Learn) and their components; `ui/` holds the shadcn-style primitives on Radix. |
+| `src/pages/`, `src/components/` | Pages (Studio, Library, Playlists, Import/Export, Learn) and their components; `ui/` holds the shadcn-style primitives on Radix. |
 | `src/themes/` | Design-token theme system: add a file in `definitions/` to add a theme. |
 | `src-tauri/` | Rust shell: locked-down window and CSP, atomic config persistence, native file dialogs. |
 

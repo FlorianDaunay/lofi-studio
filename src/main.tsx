@@ -4,6 +4,7 @@ import App from "./App";
 import "./index.css";
 import { startBridge } from "./state/bridge";
 import { restoreConfig, startAutosave } from "./state/persist";
+import { startPlayback } from "./state/playback";
 import "./themes"; // applies the saved theme before the first paint of the app
 
 /** Owns the store <-> audio engine and store <-> disk wiring for the lifetime of the UI. */
@@ -11,9 +12,11 @@ function Root() {
   useEffect(() => {
     const stopBridge = startBridge();
     const stopAutosave = startAutosave();
+    const stopPlayback = startPlayback();
     return () => {
       stopBridge();
       stopAutosave();
+      stopPlayback();
     };
   }, []);
   return <App />;

@@ -22,3 +22,16 @@ export const PINNED_SLOTS = 4;
 export const MAX_SONG_NAME = 60;
 export const MAX_SONG_DESCRIPTION = 140;
 export const MAX_USER_SONGS = 200;
+
+/** An ordered list of songs (built-in or the user's), played in order or shuffled. */
+export interface Playlist {
+  id: string;
+  name: string;
+  /** Ids of songs that exist in the library; a song may appear once. */
+  songIds: string[];
+  createdAt: number;
+}
+
+// Kept low on purpose: the config file the Rust side accepts is capped at 1 MB.
+export const MAX_PLAYLISTS = 30;
+export const MAX_PLAYLIST_SONGS = 100;

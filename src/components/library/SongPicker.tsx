@@ -6,7 +6,8 @@ import { cn } from "@/lib/utils";
 import { PINNED_SLOTS, type Song } from "@/songs/types";
 import { useLibrary } from "@/state/library";
 import { useAllSongs } from "@/state/selectors";
-import { songChords, songIcon } from "./song-display";
+import { SongCover } from "./SongCover";
+import { songChords } from "./song-display";
 
 interface SongPickerProps {
   /** The pinned slot (0-based) being changed, or `null` when closed. */
@@ -36,7 +37,6 @@ function SongList({ slot, onClose }: { slot: number; onClose: () => void }) {
       <ul className="flex-1 overflow-y-auto p-2">
         {shown.length === 0 && <li className="py-8 text-center text-sm text-text-muted">No song matches.</li>}
         {shown.map((song) => {
-          const Icon = songIcon(song);
           const current = pinned[slot] === song.id;
           const elsewhere = !current && pinned.includes(song.id);
           return (
@@ -49,9 +49,7 @@ function SongList({ slot, onClose }: { slot: number; onClose: () => void }) {
                   current && "bg-accent/10",
                 )}
               >
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-tile bg-surface-hover text-accent" aria-hidden>
-                  <Icon className="h-4 w-4" />
-                </span>
+                <SongCover params={song.params} className="w-10 shrink-0" />
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-medium">{song.name}</span>
                   <span className="block truncate text-xs text-text-muted">

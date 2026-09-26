@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import type { Song } from "@/songs/types";
+import type { Playlist } from "@/songs/types";
 import { allSongs, findSong, useLibrary } from "./library";
 import { useStudio } from "./studio";
 
@@ -14,4 +15,10 @@ export function useCurrentSong(): Song | undefined {
   const songId = useStudio((s) => s.songId);
   const songs = useLibrary((s) => s.songs);
   return useMemo(() => findSong(songs, songId), [songs, songId]);
+}
+
+/** The songs of a playlist, in order (ids that no longer resolve are skipped). */
+export function usePlaylistSongs(playlist: Playlist): Song[] {
+  const songs = useLibrary((s) => s.songs);
+  return useMemo(() => playlist.songIds.flatMap((id) => findSong(songs, id) ?? []), [songs, playlist.songIds]);
 }

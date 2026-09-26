@@ -1,6 +1,7 @@
 import { Sidebar } from "@/components/layout/Sidebar";
 import { LearnPage } from "@/pages/LearnPage";
 import { LibraryPage } from "@/pages/LibraryPage";
+import { PlaylistsPage } from "@/pages/PlaylistsPage";
 import { SharePage } from "@/pages/SharePage";
 import { StudioPage } from "@/pages/StudioPage";
 import { useNavigation, type Page } from "@/state/navigation";
@@ -8,6 +9,7 @@ import { useNavigation, type Page } from "@/state/navigation";
 const PAGE_COMPONENTS: Record<Page, () => React.JSX.Element> = {
   studio: StudioPage,
   library: LibraryPage,
+  playlists: PlaylistsPage,
   share: SharePage,
   learn: LearnPage,
 };

@@ -1,6 +1,7 @@
 import { Plus, Search } from "lucide-react";
 import { useState } from "react";
 import { DeleteSongDialog } from "@/components/library/DeleteSongDialog";
+import { PlaylistPicker } from "@/components/library/PlaylistPicker";
 import { SlotPicker } from "@/components/library/SlotPicker";
 import { SongCard } from "@/components/library/SongCard";
 import { SongForm } from "@/components/library/SongForm";
@@ -33,6 +34,7 @@ export function LibraryPage() {
   const [editing, setEditing] = useState<Song | null>(null);
   const [deleting, setDeleting] = useState<Song | null>(null);
   const [pinning, setPinning] = useState<Song | null>(null);
+  const [listing, setListing] = useState<Song | null>(null);
 
   const needle = query.trim().toLowerCase();
   const mine = userSongs.filter((song) => matches(song, needle));
@@ -55,6 +57,7 @@ export function LibraryPage() {
       pinnedSlot={pinned.includes(song.id) ? pinned.indexOf(song.id) + 1 : null}
       onLoad={() => loadSong(song)}
       onPin={() => setPinning(song)}
+      onPlaylist={() => setListing(song)}
       onExport={() => void exportSong(song)}
       onCopy={song.builtIn ? () => setNotice(copySong(song) ? `Saved a copy of “${song.name}” in My songs.` : "Your library is full.") : undefined}
       onEdit={song.builtIn ? undefined : () => setEditing(song)}
@@ -131,6 +134,7 @@ export function LibraryPage() {
       />
       <DeleteSongDialog song={deleting} onClose={() => setDeleting(null)} onConfirm={(song) => deleteSong(song.id)} />
       <SlotPicker song={pinning} onClose={() => setPinning(null)} />
+      <PlaylistPicker song={listing} onClose={() => setListing(null)} />
     </>
   );
 }

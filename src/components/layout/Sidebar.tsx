@@ -1,8 +1,9 @@
-import { ArrowLeftRight, GraduationCap, Library, LoaderCircle, Palette, Play, SlidersHorizontal, Square, type LucideIcon } from "lucide-react";
+import { ArrowLeftRight, GraduationCap, Library, ListMusic, LoaderCircle, Palette, Play, SkipBack, SkipForward, SlidersHorizontal, Square, type LucideIcon } from "lucide-react";
 import { useState } from "react";
 import { ThemeDialog } from "@/components/appearance/ThemeDialog";
 import { cn } from "@/lib/utils";
 import { togglePlay } from "@/state/bridge";
+import { playNext, playPrevious } from "@/state/playback";
 import { useNavigation, type Page } from "@/state/navigation";
 import { useCurrentSong } from "@/state/selectors";
 import { useStudio } from "@/state/studio";
@@ -11,6 +12,7 @@ import { useActiveTheme } from "@/themes";
 const ITEMS: { page: Page; label: string; icon: LucideIcon }[] = [
   { page: "studio", label: "Studio", icon: SlidersHorizontal },
   { page: "library", label: "Library", icon: Library },
+  { page: "playlists", label: "Playlists", icon: ListMusic },
   { page: "share", label: "Import / Export", icon: ArrowLeftRight },
   { page: "learn", label: "Learn", icon: GraduationCap },
 ];
@@ -35,9 +37,17 @@ function MiniPlayer() {
       >
         <Icon className={cn("h-4 w-4", !starting && "fill-current", starting && "animate-spin")} aria-hidden />
       </button>
-      <span className="hidden min-w-0 md:block">
+      <span className="hidden min-w-0 flex-1 md:block">
         <span className="block text-[0.65rem] uppercase tracking-wider">{playing ? "Playing" : "Stopped"}</span>
         <span className="block truncate text-sm font-medium text-sidebar-text-strong">{song?.name ?? "Custom sound"}</span>
+      </span>
+      <span className="hidden shrink-0 md:flex">
+        <button type="button" onClick={playPrevious} aria-label="Previous song" title="Previous song" className="rounded-control p-1.5 hover:bg-sidebar-hover hover:text-sidebar-text-strong">
+          <SkipBack className="h-3.5 w-3.5" aria-hidden />
+        </button>
+        <button type="button" onClick={playNext} aria-label="Next song" title="Next song" className="rounded-control p-1.5 hover:bg-sidebar-hover hover:text-sidebar-text-strong">
+          <SkipForward className="h-3.5 w-3.5" aria-hidden />
+        </button>
       </span>
     </div>
   );

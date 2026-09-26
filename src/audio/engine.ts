@@ -61,6 +61,11 @@ export class AudioEngine {
     this.playingListener = listener;
   }
 
+  /** Starts the loop over from the first step of the first bar (a new song began). */
+  restartLoop() {
+    this.counter = 0;
+  }
+
   /** Applies a new snapshot; only the parts that changed by reference touch the audio graph. */
   update(next: EngineParams) {
     const prev = this.params;
