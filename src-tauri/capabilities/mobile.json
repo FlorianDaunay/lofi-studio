@@ -1,0 +1,8 @@
+{
+  "$schema": "../gen/schemas/mobile-schema.json",
+  "identifier": "mobile",
+  "description": "Android only: listen to the media notification's buttons (the app's own `media` plugin).",
+  "platforms": ["android"],
+  "windows": ["main"],
+  "permissions": ["media:default"]
+}

@@ -1,4 +1,5 @@
 import { MobileNav } from "@/components/layout/MobileNav";
+import { MiniPlayer } from "@/components/player/MiniPlayer";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { LearnPage } from "@/pages/LearnPage";
 import { LibraryPage } from "@/pages/LibraryPage";
@@ -6,6 +7,7 @@ import { PlaylistsPage } from "@/pages/PlaylistsPage";
 import { SharePage } from "@/pages/SharePage";
 import { StudioPage } from "@/pages/StudioPage";
 import { useNavigation, type Page } from "@/state/navigation";
+import { useWindowMode } from "@/state/window";
 
 const PAGE_COMPONENTS: Record<Page, () => React.JSX.Element> = {
   studio: StudioPage,
@@ -17,6 +19,9 @@ const PAGE_COMPONENTS: Record<Page, () => React.JSX.Element> = {
 
 export default function App() {
   const page = useNavigation((s) => s.page);
+  const mini = useWindowMode((s) => s.mode === "mini");
+  // Desktop: the window shrunk to a mini player. The engine lives on in this page, so it keeps playing.
+  if (mini) return <MiniPlayer />;
   const Current = PAGE_COMPONENTS[page];
   return (
     <div className="flex h-full">

@@ -18,6 +18,8 @@ Tauri 2 (Rust) · React 19 · TypeScript · Zustand · Tone.js · Tailwind 3 + R
 - **Player.** Previous / next, shuffle, repeat (off, all, this song) and a source picker (whole library or one playlist). Songs loop until they last about two minutes, then the next one starts; auto-advance never replaces a sound with unsaved edits.
 - **Generated covers.** Every song gets its own cover, drawn from its params, so songs that sound alike look alike. The sound picks a world (city, sea, mountains, forest, desert, fields) with one landmark per chord; the key sets the colors, a dark tone brings the night and a moon, the pad adds clouds, the melody birds, the ambience rain and wind, and the pattern shows as a strip at the bottom. A playlist cover is a strip of slices cut from its songs' covers. Nothing is stored: covers are recomputed.
 - **Share.** Send songs *and playlists* as a `.lofi.json` file or as a short compressed code you can paste in a chat. Pick what to send from cover tiles; when receiving, drop a file or paste a code to see what is inside before adding it. Songs you already have are not duplicated.
+- **Plays in the background.** On Android the music goes on with the screen off or another app open, with a media notification (also on the lock screen and headset buttons) for previous / play-pause / next; it pauses for calls and when headphones are unplugged. On the desktop, closing the window while music plays hides it in the tray (next to the clock), whose menu plays, skips, reopens or quits. With nothing playing, the app keeps no background task: Android may reclaim it, and closing the desktop window quits.
+- **Mini player (desktop).** Shrink the window to a small always-on-top player (sidebar or tray menu): cover, title, previous / play / next, back to the full app, or hide to the tray.
 - **Android.** A phone layout (bottom tab bar and player, touch-sized controls, back button support) and a GitHub Actions workflow that builds an installable APK.
 - **Interactive tutorial.** Fourteen short lessons in four levels, from the first loop to sharing songs. Every lesson embeds the real controls plus a live diagram (signal path, swing, piano keys of the current chord, filter wobble), and progress is remembered.
 - **59 themes** with live previews, searchable, light/dark, optional "match system".
@@ -50,6 +52,7 @@ Tauri 2 (Rust) · React 19 · TypeScript · Zustand · Tone.js · Tailwind 3 + R
 4. **Share**: under *Send*, tick songs or playlists, then *Copy code* or *Save file…*. Under *Receive*, drop or open a file, or paste a code, untick what you do not want and add the rest. Nothing is ever overwritten.
 5. **Learn**: start at level 1 if music is new to you; each lesson is hands-on.
 6. **Appearance** (bottom of the sidebar, *Theme* on a phone): pick a theme.
+7. **In the background**: on a phone, press Home or turn the screen off; the notification controls the music. On the desktop, close the window while playing (or use *Mini player* in the sidebar); left-click the tray icon to bring it back, right-click for the menu. Quit from the tray menu.
 
 ## Run
 
@@ -93,17 +96,18 @@ npm run tauri android build -- --apk --debug --target aarch64
 | --- | --- |
 | `src/audio/` | `AudioEngine` and its parts (instruments, ambience, procedural noise, music helpers). No React, no store: it receives an immutable `EngineParams` snapshot. |
 | `src/songs/` | The song domain: types, defaults, built-in songs and playlists, play queue, cover art scenes, sanitizers for untrusted input, share format and import planning. Pure TypeScript, unit-tested. |
-| `src/state/` | Zustand stores (studio, library, player, navigation), the queue / auto-advance logic (`playback.ts`), cross-store actions, persistence and audio wiring. |
+| `src/state/` | Zustand stores (studio, library, player, navigation, window mode), the queue / auto-advance logic (`playback.ts`), cross-store actions, persistence, audio wiring and the sync with the system's media controls (`media.ts`). |
 | `src/learn/` | The tutorial curriculum (levels and lesson ids). The lesson bodies live in `src/components/learn/`. |
 | `src/pages/`, `src/components/` | Pages (Studio, Library, Playlists, Share, Learn) and their components; `ui/` holds the shadcn-style primitives on Radix. |
 | `src/themes/` | Design-token theme system: add a file in `definitions/` to add a theme. |
-| `src-tauri/` | Rust shell: locked-down window and CSP, atomic config persistence, native file dialogs (also on Android). `gen/android` is the generated Android project, kept in git with its signing hook and edge-to-edge insets. |
+| `src-tauri/` | Rust shell: locked-down window and CSP, atomic config persistence, native file dialogs (also on Android), the tray icon and mini player (desktop), now-playing relay (`media.rs`). `gen/android` is the generated Android project, kept in git with its signing hook, edge-to-edge insets and the background playback service (`PlaybackService.kt`, `MediaPlugin.kt`). |
 | `.github/workflows/` | CI (typecheck, tests, build, `cargo test`) and the Android APK build. |
 
 More detail for contributors is in [`CLAUDE.md`](CLAUDE.md).
 
 ## Notes
 
+- Songs advance on the audio clock, not on screen frames, so a playlist keeps going in the background. While the page is hidden, the step display is not updated at all.
 - The AudioContext is created on the first Play click (user gesture). Stopping fades out, halts the transport and noise sources, then suspends the context: an idle studio uses no CPU. Ambience layers only hold audio sources while audible.
 - Your library and settings are saved (debounced) by the Rust side to `config.json` in the OS app-config directory; every field is re-validated on load and on import.
 - File dialogs run in Rust: the web view never gets to name a path, and only the app's own pages can load in the window.

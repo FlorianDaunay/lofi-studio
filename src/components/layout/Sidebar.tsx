@@ -1,7 +1,9 @@
-import { LoaderCircle, Palette, Play, SkipBack, SkipForward, Square } from "lucide-react";
+import { LoaderCircle, Palette, PictureInPicture2, Play, SkipBack, SkipForward, Square } from "lucide-react";
 import { useState } from "react";
 import { ThemeDialog } from "@/components/appearance/ThemeDialog";
+import { isDesktopApp } from "@/lib/runtime";
 import { cn } from "@/lib/utils";
+import { setWindowMode } from "@/lib/window";
 import { togglePlay } from "@/state/bridge";
 import { playNext, playPrevious } from "@/state/playback";
 import { useNavigation } from "@/state/navigation";
@@ -12,8 +14,10 @@ import { NAV_ITEMS } from "./nav-items";
 
 const itemClass = "flex w-full items-center gap-3 rounded-control px-3 py-2 text-sm transition-colors hover:bg-sidebar-hover hover:text-sidebar-text-strong";
 
+const playerButton = "rounded-control p-1.5 hover:bg-sidebar-hover hover:text-sidebar-text-strong";
+
 /** Play / stop and the current song, reachable from every page. */
-function MiniPlayer() {
+function SidebarPlayer() {
   const playing = useStudio((s) => s.playing);
   const starting = useStudio((s) => s.starting);
   const song = useCurrentSong();
@@ -34,22 +38,10 @@ function MiniPlayer() {
         <span className="block truncate text-sm font-medium text-sidebar-text-strong">{song?.name ?? "Custom sound"}</span>
       </span>
       <span className="hidden shrink-0 md:flex">
-        <button
-          type="button"
-          onClick={playPrevious}
-          aria-label="Previous song"
-          title="Previous song"
-          className="rounded-control p-1.5 hover:bg-sidebar-hover hover:text-sidebar-text-strong"
-        >
+        <button type="button" onClick={playPrevious} aria-label="Previous song" title="Previous song" className={playerButton}>
           <SkipBack className="h-3.5 w-3.5" aria-hidden />
         </button>
-        <button
-          type="button"
-          onClick={playNext}
-          aria-label="Next song"
-          title="Next song"
-          className="rounded-control p-1.5 hover:bg-sidebar-hover hover:text-sidebar-text-strong"
-        >
+        <button type="button" onClick={playNext} aria-label="Next song" title="Next song" className={playerButton}>
           <SkipForward className="h-3.5 w-3.5" aria-hidden />
         </button>
       </span>
@@ -95,7 +87,20 @@ export function Sidebar() {
         })}
       </nav>
 
-      <MiniPlayer />
+      <SidebarPlayer />
+
+      {isDesktopApp && (
+        <button
+          type="button"
+          onClick={() => void setWindowMode("mini")}
+          aria-label="Mini player"
+          title="Mini player: a small window that stays on top"
+          className={itemClass}
+        >
+          <PictureInPicture2 className="h-4 w-4 shrink-0" aria-hidden />
+          <span className="hidden md:inline">Mini player</span>
+        </button>
+      )}
 
       <button type="button" onClick={() => setAppearanceOpen(true)} aria-label="Appearance" title="Appearance" className={itemClass}>
         <Palette className="h-4 w-4 shrink-0" aria-hidden />

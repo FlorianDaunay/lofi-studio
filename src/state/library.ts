@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { BUILT_IN_SONGS } from "@/songs/builtin";
 import { BUILT_IN_PLAYLISTS } from "@/songs/builtin-playlists";
 import { DEFAULT_PINNED, fillPinned } from "@/songs/pinned";
+import type { PlaySource } from "@/songs/playback";
 import { pruneSongIds, sanitizePlaylists, withSongAdded, withSongMoved, withSongRemoved } from "@/songs/playlists";
 import { MAX_PLAYLISTS, MAX_SONG_DESCRIPTION, MAX_SONG_NAME, MAX_USER_SONGS, PINNED_SLOTS, type Playlist, type Song, type SongDraft } from "@/songs/types";
 
@@ -108,6 +109,10 @@ export const useLibrary = create<LibraryState>()((set, get) => ({
 /** Looks in the built-in playlists, then in the user's. Pass the `playlists` you selected from the store. */
 export const findPlaylist = (playlists: readonly Playlist[], id: string): Playlist | undefined =>
   BUILT_IN_PLAYLISTS.find((list) => list.id === id) ?? playlists.find((list) => list.id === id);
+
+/** What the player plays from, as shown to the user (a deleted playlist reads as the whole library, as the player does). */
+export const sourceName = (source: PlaySource, playlists: readonly Playlist[]): string =>
+  (source.kind === "playlist" ? findPlaylist(playlists, source.id)?.name : undefined) ?? "Whole library";
 
 /** The user's playlists first (they are the ones being worked on), then the built-in ones. */
 export const allPlaylists = (playlists: readonly Playlist[]): Playlist[] => [...playlists, ...BUILT_IN_PLAYLISTS];

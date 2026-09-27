@@ -1,0 +1,8 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "desktop",
+  "description": "Desktop only: the frameless mini player drags its window from its empty areas.",
+  "platforms": ["windows", "macOS", "linux"],
+  "windows": ["main"],
+  "permissions": ["core:window:allow-start-dragging"]
+}

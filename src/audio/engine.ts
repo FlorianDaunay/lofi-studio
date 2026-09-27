@@ -59,14 +59,27 @@ export class AudioEngine {
   private shutdownTimer: ReturnType<typeof setTimeout> | undefined;
   private stepListener: ((step: number, bar: number) => void) | undefined;
   private playingListener: ((playing: boolean) => void) | undefined;
+  private loopEndListener: (() => void) | undefined;
   private removeStateListener: (() => void) | undefined;
 
   get isPlaying() {
     return this.playing;
   }
 
+  /**
+   * The step being heard, for the UI. It is delivered on animation frames, so set it to
+   * `undefined` while the page is hidden: frames stop there and would only pile up.
+   */
   onStep(listener: ((step: number, bar: number) => void) | undefined) {
     this.stepListener = listener;
+  }
+
+  /**
+   * Called as the last step of the progression is scheduled, on the audio clock: unlike
+   * `onStep`, it keeps firing while the page is hidden (app in the background, window in the tray).
+   */
+  onLoopEnd(listener: (() => void) | undefined) {
+    this.loopEndListener = listener;
   }
 
   onPlayingChange(listener: ((playing: boolean) => void) | undefined) {
@@ -274,6 +287,8 @@ export class AudioEngine {
       graph.lead.play(midiToHz(leadMidi(chord, step)), stepSeconds * 1.6, at(), velocity(0.7));
     }
 
-    Tone.getDraw().schedule(() => this.stepListener?.(step, bar), time);
+    if (this.stepListener) Tone.getDraw().schedule(() => this.stepListener?.(step, bar), time);
+    // Last: the listener may switch songs, which restarts the loop for the next tick.
+    if (step === STEPS - 1 && bar === p.progression.length - 1) this.loopEndListener?.();
   }
 }

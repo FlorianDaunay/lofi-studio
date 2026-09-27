@@ -3,23 +3,19 @@ import { createRoot } from "react-dom/client";
 import App from "./App";
 import "./index.css";
 import { startBridge } from "./state/bridge";
+import { startMediaSync } from "./state/media";
 import { restoreConfig, startAutosave } from "./state/persist";
 import { startHistorySync } from "./state/navigation";
 import { startPlayback } from "./state/playback";
+import { startWindowSync } from "./state/window";
 import "./themes"; // applies the saved theme before the first paint of the app
 
-/** Owns the store <-> audio engine and store <-> disk wiring for the lifetime of the UI. */
+/** Owns the store <-> audio engine, store <-> disk and store <-> app shell wiring for the lifetime of the UI. */
 function Root() {
   useEffect(() => {
-    const stopBridge = startBridge();
-    const stopAutosave = startAutosave();
-    const stopPlayback = startPlayback();
-    const stopHistorySync = startHistorySync();
+    const stops = [startBridge(), startAutosave(), startPlayback(), startHistorySync(), startMediaSync(), startWindowSync()];
     return () => {
-      stopBridge();
-      stopAutosave();
-      stopPlayback();
-      stopHistorySync();
+      for (const stop of stops) stop();
     };
   }, []);
   return <App />;

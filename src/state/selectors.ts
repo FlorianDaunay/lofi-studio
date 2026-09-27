@@ -1,7 +1,8 @@
 import { useMemo } from "react";
 import type { Song } from "@/songs/types";
 import type { Playlist } from "@/songs/types";
-import { allPlaylists, allSongs, findSong, useLibrary } from "./library";
+import { allPlaylists, allSongs, findSong, sourceName, useLibrary } from "./library";
+import { usePlayer } from "./player";
 import { useStudio } from "./studio";
 
 /** Every song the user can pick: built-ins first, then their own. */
@@ -27,4 +28,11 @@ export function usePlaylistSongs(playlist: Playlist): Song[] {
 export function useAllPlaylists(): Playlist[] {
   const playlists = useLibrary((s) => s.playlists);
   return useMemo(() => allPlaylists(playlists), [playlists]);
+}
+
+/** The name of what the player plays from: a playlist or the whole library. */
+export function useSourceName(): string {
+  const source = usePlayer((s) => s.source);
+  const playlists = useLibrary((s) => s.playlists);
+  return sourceName(source, playlists);
 }

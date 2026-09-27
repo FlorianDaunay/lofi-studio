@@ -13,10 +13,14 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
-tauri = { version = "2", features = [] }
+tauri = { version = "2", features = ["tray-icon"] }
 tauri-plugin-dialog = "2"
 serde_json = "1"
 tauri-plugin-fs = "2"
+
+# A second launch focuses the running app (it may be playing hidden in the tray) instead of starting another.
+[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
+tauri-plugin-single-instance = "2"
 
 # Small and lean: the app is a thin shell around the webview.
 [profile.release]

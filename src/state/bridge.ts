@@ -14,7 +14,15 @@ export function startBridge(): () => void {
 
   engine.update(getState().params);
   engine.onPlayingChange((playing) => getState().setPlaying(playing));
-  engine.onStep((step, bar) => getState().setStep(step, bar));
+
+  // The step display only matters while someone can see it (the app keeps playing in the background).
+  const followSteps = () => {
+    const visible = document.visibilityState === "visible";
+    engine.onStep(visible ? (step, bar) => getState().setStep(step, bar) : undefined);
+    if (!visible) getState().setStep(-1, -1);
+  };
+  followSteps();
+  document.addEventListener("visibilitychange", followSteps);
 
   const unsubscribe = subscribe((state, prev) => {
     if (state.params !== prev.params) engine.update(state.params);
@@ -22,6 +30,7 @@ export function startBridge(): () => void {
 
   return () => {
     unsubscribe();
+    document.removeEventListener("visibilitychange", followSteps);
     engine.onPlayingChange(undefined);
     engine.onStep(undefined);
     setState({ playing: false, step: -1, bar: -1 });

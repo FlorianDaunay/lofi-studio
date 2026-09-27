@@ -1,4 +1,3 @@
-import { STEPS } from "@/audio/types";
 import {
   buildQueue,
   loopsFor,
@@ -103,18 +102,23 @@ export async function playSource(source: PlaySource, startWith?: string) {
 /**
  * Moves to the next song when the current one has played long enough. Never while the sound has
  * unsaved edits or is not a saved song: that would throw the user's work away.
+ * Counts loops on the audio clock, so songs keep following one another in the background.
  * Returns a cleanup function, like `startBridge`.
  */
 export function startPlayback(): () => void {
   let loops = 0;
-  return useStudio.subscribe((state, prev) => {
+  const unsubscribe = useStudio.subscribe((state, prev) => {
     if (!state.playing || state.songId !== prev.songId) loops = 0;
-    if (!state.playing || state.step === prev.step) return;
-    const lastBar = state.params.progression.length - 1;
-    if (state.step !== STEPS - 1 || state.bar !== lastBar) return;
+  });
+  engine.onLoopEnd(() => {
+    const state = useStudio.getState();
     loops++;
     if (loops < loopsFor(state.params) || state.dirty || state.songId === null) return;
     loops = 0;
     advance(true);
   });
+  return () => {
+    unsubscribe();
+    engine.onLoopEnd(undefined);
+  };
 }
