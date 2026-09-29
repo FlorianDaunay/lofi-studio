@@ -2,6 +2,8 @@ import { sanitizeDraft, sanitizeParams, isRecord } from "@/songs/sanitize";
 import { sanitizeLearned } from "./learning";
 import { BUILT_IN_SONGS } from "@/songs/builtin";
 import { sanitizePlaylists } from "@/songs/playlists";
+import { BUILT_IN_PLAYLISTS } from "@/songs/builtin-playlists";
+import { sanitizeStats, type Stats } from "@/songs/stats";
 import { MAX_SONG_NAME, MAX_USER_SONGS, type Playlist, type Song } from "@/songs/types";
 import { sanitizePlayer, type PlayerPrefs } from "./player";
 
@@ -23,6 +25,8 @@ export interface PersistedConfig {
   player: PlayerPrefs;
   /** Tutorial lessons marked as done. */
   learned: string[];
+  /** Listening and creating totals (see `songs/stats.ts`). */
+  stats: Stats;
 }
 
 const id = (v: unknown) => (typeof v === "string" && v.length > 0 && v.length <= 64 ? v : null);
@@ -50,6 +54,9 @@ export function sanitizeConfig(raw: unknown): PersistedConfig {
   const r = isRecord(raw) ? raw : {};
   const panels = isRecord(r.panels) ? r.panels : {};
   const songs = sanitizeSongs(r.songs);
+  const songIds = [...BUILT_IN_SONGS, ...songs].map((song) => song.id);
+  const playlists = sanitizePlaylists(r.playlists, songIds);
+  const playlistIds = [...playlists, ...BUILT_IN_PLAYLISTS].map((playlist) => playlist.id);
   return {
     version: 2,
     params: sanitizeParams(r.params),
@@ -58,8 +65,9 @@ export function sanitizeConfig(raw: unknown): PersistedConfig {
     panels: Object.fromEntries(PANEL_IDS.map((panel) => [panel, panels[panel] === true])) as Record<PanelId, boolean>,
     songs,
     pinned: Array.isArray(r.pinned) ? r.pinned : [],
-    playlists: sanitizePlaylists(r.playlists, [...BUILT_IN_SONGS, ...songs].map((song) => song.id)),
+    playlists,
     player: sanitizePlayer(r.player),
     learned: sanitizeLearned(r.learned),
+    stats: sanitizeStats(r.stats, songIds, playlistIds, Date.now()),
   };
 }

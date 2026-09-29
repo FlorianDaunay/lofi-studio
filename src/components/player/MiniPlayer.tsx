@@ -1,9 +1,10 @@
 import { LoaderCircle, Maximize2, Pause, Play, SkipBack, SkipForward, X } from "lucide-react";
-import { STEPS } from "@/audio";
 import { SongCover } from "@/components/library/SongCover";
+import { formatClock } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { hideToTray, setWindowMode } from "@/lib/window";
 import { togglePlay } from "@/state/bridge";
+import { songProgress, songSeconds } from "@/songs/playback";
 import { playNext, playPrevious } from "@/state/playback";
 import { useCurrentSong, useSourceName } from "@/state/selectors";
 import { useStudio } from "@/state/studio";
@@ -13,16 +14,27 @@ const smallButton =
 const windowButton =
   "flex h-6 w-6 items-center justify-center rounded-control text-sidebar-text transition-colors hover:bg-sidebar-hover hover:text-sidebar-text-strong";
 
-/** Where the loop is: a thin line along the bottom edge. Only this element re-renders on each step. */
-function LoopProgress() {
-  // Empty when stopped: playing again starts the loop from the top.
-  const fraction = useStudio((s) =>
-    !s.playing || s.bar < 0 ? 0 : (s.bar * STEPS + s.step + 1) / (s.params.progression.length * STEPS),
-  );
+/** How far into the whole song the player is (0..1): empty when stopped, as playing again starts over. */
+const useSongProgress = () => useStudio((s) => (s.playing ? songProgress(s.params, s.loop, s.bar, s.step) : 0));
+
+/** A thin line along the bottom edge. Only this element re-renders on each step. */
+function SongProgressLine() {
+  const fraction = useSongProgress();
   return (
     <div className="absolute inset-x-0 bottom-0 h-0.5 bg-sidebar-border" aria-hidden>
       <div className="h-full bg-accent motion-safe:transition-[width] motion-safe:duration-100" style={{ width: `${fraction * 100}%` }} />
     </div>
+  );
+}
+
+/** Elapsed and total time of the song. */
+function SongClock() {
+  const fraction = useSongProgress();
+  const total = useStudio((s) => songSeconds(s.params));
+  return (
+    <span className="ml-auto whitespace-nowrap pr-1 font-mono text-[11px] tabular-nums">
+      {formatClock(fraction * total)} / {formatClock(total)}
+    </span>
   );
 }
 
@@ -68,6 +80,7 @@ export function MiniPlayer() {
           <button type="button" onClick={playNext} aria-label="Next song" title="Next song" className={smallButton}>
             <SkipForward className="h-4 w-4" aria-hidden />
           </button>
+          <SongClock />
         </span>
       </div>
 
@@ -86,7 +99,7 @@ export function MiniPlayer() {
         </button>
       </div>
 
-      <LoopProgress />
+      <SongProgressLine />
     </div>
   );
 }

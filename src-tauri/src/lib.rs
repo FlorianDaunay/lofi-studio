@@ -1,6 +1,8 @@
 mod config;
 mod files;
 mod media;
+#[cfg(windows)]
+mod smtc;
 #[cfg(desktop)]
 mod tray;
 #[cfg(desktop)]
@@ -50,7 +52,9 @@ pub fn run() {
                 tray::create(app.handle())?;
                 window::configure(builder)
             };
-            builder.build()?;
+            let _window = builder.build()?;
+            #[cfg(windows)]
+            smtc::attach(&_window);
             Ok(())
         });
     #[cfg(desktop)]

@@ -1982,7 +1982,7 @@ dependencies = [
 
 [[package]]
 name = "lofi-studio"
-version = "0.6.1"
+version = "0.7.0"
 dependencies = [
  "serde_json",
  "tauri",
@@ -1990,6 +1990,7 @@ dependencies = [
  "tauri-plugin-dialog",
  "tauri-plugin-fs",
  "tauri-plugin-single-instance",
+ "windows",
 ]
 
 [[package]]

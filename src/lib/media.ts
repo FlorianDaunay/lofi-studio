@@ -4,9 +4,10 @@ import { isMobile, isTauri } from "./runtime";
 import { cleanupWhenReady } from "./utils";
 
 /**
- * The system's media controls: the tray icon on the desktop, the notification (and lock screen,
- * headset buttons) on Android. The page tells the shell what is playing; the shell sends back
- * what the user pressed. In a plain browser both ends are no-ops.
+ * The system's media controls: the tray icon on the desktop (plus the media keys and headphone
+ * buttons on Windows), the notification (and lock screen, headset buttons) on Android. The page
+ * tells the shell what is playing; the shell sends back what the user pressed. In a plain browser
+ * only the media keys pressed while the page has the focus are heard.
  */
 
 export const MEDIA_ACTIONS = ["play", "pause", "toggle", "next", "previous"] as const;
@@ -24,9 +25,29 @@ export async function publishNowPlaying(nowPlaying: NowPlaying): Promise<void> {
   if (isTauri) await invoke("set_now_playing", { ...nowPlaying });
 }
 
+/** Keyboard media keys, as the browser reports them to a focused page. */
+const MEDIA_KEYS: Record<string, MediaAction> = {
+  MediaPlayPause: "toggle",
+  MediaPlay: "play",
+  MediaPause: "pause",
+  MediaStop: "pause",
+  MediaTrackNext: "next",
+  MediaTrackPrevious: "previous",
+};
+
 /** Calls `handler` for each button pressed outside the page. Returns a cleanup function. */
 export function onMediaAction(handler: (action: MediaAction) => void): () => void {
-  if (!isTauri) return () => {};
+  if (!isTauri) {
+    // In the app the shell hears the keys (even unfocused): listening here too would act twice.
+    const onKey = (event: KeyboardEvent) => {
+      const action = MEDIA_KEYS[event.key];
+      if (!action) return;
+      event.preventDefault();
+      handler(action);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }
   const accept = (action: unknown) => {
     if (isMediaAction(action)) handler(action);
   };

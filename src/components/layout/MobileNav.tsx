@@ -69,18 +69,18 @@ export function MobileNav() {
               onClick={() => go(target)}
               className={cn(tab, active && "text-sidebar-text-active")}
             >
-              <span className={cn("flex h-7 w-12 items-center justify-center rounded-pill transition-colors", active && "bg-sidebar-active")}>
+              <span className={cn("flex h-7 w-full max-w-12 items-center justify-center rounded-pill transition-colors", active && "bg-sidebar-active")}>
                 <Icon className="h-4 w-4" aria-hidden />
               </span>
-              {label}
+              <span className="max-w-full truncate">{label}</span>
             </button>
           );
         })}
         <button type="button" onClick={() => setAppearanceOpen(true)} className={tab}>
-          <span className="flex h-7 w-12 items-center justify-center" aria-hidden>
+          <span className="flex h-7 w-full max-w-12 items-center justify-center" aria-hidden>
             <Palette className="h-4 w-4" />
           </span>
-          Theme
+          <span className="max-w-full truncate">Theme</span>
         </button>
       </nav>
       <ThemeDialog open={appearanceOpen} onOpenChange={setAppearanceOpen} />

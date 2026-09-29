@@ -1,4 +1,4 @@
-//! Save / open a share file through the OS file dialogs.
+//! Save / open a share or backup file through the OS file dialogs.
 //!
 //! The dialog is opened here, in Rust, and the frontend only ever receives or hands over the file's
 //! *contents*: it never gets to name a path, so a compromised page cannot read or write arbitrary files.
@@ -11,8 +11,9 @@ use tauri::AppHandle;
 use tauri_plugin_dialog::DialogExt;
 use tauri_plugin_fs::{FsExt, OpenOptions};
 
-/// Share files are small; this only stops someone opening a huge unrelated file by mistake.
-const MAX_BYTES: u64 = 1024 * 1024;
+/// A backup holds the whole config (capped at 1 MB in `config.rs`) plus a little: this only stops
+/// someone opening a huge unrelated file by mistake.
+const MAX_BYTES: u64 = 2 * 1024 * 1024;
 
 /// Asks where to save `contents`. Returns `false` if the user cancelled.
 #[tauri::command]
@@ -24,7 +25,7 @@ pub async fn save_text_file(app: AppHandle, default_name: String, contents: Stri
         .dialog()
         .file()
         .set_file_name(default_name)
-        .add_filter("Lofi Studio share", &["json"])
+        .add_filter("Lofi Studio file", &["json"])
         .blocking_save_file()
     else {
         return Ok(false);
@@ -42,7 +43,7 @@ pub async fn open_text_file(app: AppHandle) -> Result<Option<String>, String> {
     let Some(picked) = app
         .dialog()
         .file()
-        .add_filter("Lofi Studio share", &["json"])
+        .add_filter("Lofi Studio file", &["json"])
         .blocking_pick_file()
     else {
         return Ok(None);
@@ -54,7 +55,7 @@ pub async fn open_text_file(app: AppHandle) -> Result<Option<String>, String> {
     let mut text = String::new();
     file.take(MAX_BYTES + 1).read_to_string(&mut text).map_err(|e| e.to_string())?;
     if text.len() as u64 > MAX_BYTES {
-        return Err("this file is too large to be a Lofi Studio share".into());
+        return Err("this file is too large to be a Lofi Studio file".into());
     }
     Ok(Some(text))
 }

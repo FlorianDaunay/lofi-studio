@@ -3,7 +3,7 @@ import { BUILT_IN_SONGS } from "./builtin";
 import { BUILT_IN_PLAYLISTS } from "./builtin-playlists";
 import { COVER_WORLDS, coverScene, coverWorld, sceneDistance } from "./cover";
 import { planImport, resolvePlaylist } from "./import-plan";
-import { buildQueue, loopsFor, nextInQueue, previousInQueue, shuffleOrder, songSeconds } from "./playback";
+import { autoLoops, buildQueue, loopSeconds, nextInQueue, previousInQueue, shuffleOrder, songProgress, songSeconds } from "./playback";
 import { pruneSongIds, sanitizePlaylists, withSongAdded, withSongMoved, withSongRemoved } from "./playlists";
 import { MAX_PLAYLIST_SONGS, MAX_PLAYLISTS } from "./types";
 
@@ -101,12 +101,29 @@ describe("play queue", () => {
 
   it("repeats a short loop until the song lasts a couple of minutes", () => {
     for (const song of BUILT_IN_SONGS) {
-      const loops = loopsFor(song.params);
+      expect(song.params.loops).toBe(autoLoops(song.params));
+      expect(song.params.loops).toBeGreaterThanOrEqual(1);
       const seconds = songSeconds(song.params);
-      expect(loops).toBeGreaterThanOrEqual(1);
       expect(seconds).toBeGreaterThan(60);
       expect(seconds).toBeLessThan(200);
     }
+  });
+
+  it("lasts a whole number of loops", () => {
+    const params = { ...BUILT_IN_SONGS[0]!.params, loops: 3 };
+    expect(songSeconds(params)).toBeCloseTo(3 * loopSeconds(params));
+  });
+
+  it("reports progress through the whole song, not the loop", () => {
+    const params = { ...BUILT_IN_SONGS[0]!.params, progression: BUILT_IN_SONGS[0]!.params.progression.slice(0, 2), loops: 4 };
+    expect(songProgress(params, -1, -1, -1)).toBe(0);
+    expect(songProgress(params, 0, 0, 0)).toBeCloseTo(1 / 128);
+    // Last step of the first loop: a quarter of the song.
+    expect(songProgress(params, 0, 1, 15)).toBeCloseTo(0.25);
+    expect(songProgress(params, 2, 0, 15)).toBeCloseTo((2 * 32 + 16) / 128);
+    expect(songProgress(params, 3, 1, 15)).toBeCloseTo(1);
+    // A song that keeps looping (unsaved edits) starts the bar over.
+    expect(songProgress(params, 4, 0, 0)).toBeCloseTo(1 / 128);
   });
 });
 

@@ -1,6 +1,5 @@
 import {
   buildQueue,
-  loopsFor,
   nextInQueue,
   previousInQueue,
   shuffleOrder,
@@ -8,6 +7,7 @@ import {
   type RepeatMode,
 } from "@/songs/playback";
 import type { Song } from "@/songs/types";
+import { recordSongEnd } from "./activity";
 import { engine, togglePlay } from "./bridge";
 import { allSongs, findPlaylist, findSong, useLibrary } from "./library";
 import { usePlayer } from "./player";
@@ -38,6 +38,7 @@ const currentQueue = (): string[] => {
 /** Puts a song on the studio; when the engine is running it keeps going, from the top of the loop. */
 function switchTo(song: Song) {
   useStudio.getState().loadSong(song);
+  // Also when it is the song already loaded ("previous" on the first song), which `startBridge` does not see.
   engine.restartLoop();
 }
 
@@ -57,11 +58,17 @@ function advance(auto: boolean) {
     reshuffle({ avoid: songId });
     id = currentQueue()[0] ?? null;
   }
+  // A repeated song ran to its end too; a manual "next" that lands on the same song is no skip.
+  if (auto || id !== songId) recordSongEnd(auto);
   if (id === null) {
     void engine.stop();
     return;
   }
-  if (id === songId) return; // repeat-one: the loop simply carries on
+  if (id === songId) {
+    // Repeat-one: the loop simply carries on, as a new play of the song.
+    engine.restartLoop();
+    return;
+  }
   const song = findSong(useLibrary.getState().songs, id);
   if (song) switchTo(song);
 }
@@ -95,30 +102,22 @@ export async function playSource(source: PlaySource, startWith?: string) {
   const id = startWith ?? currentQueue()[0];
   const song = id === undefined ? undefined : findSong(useLibrary.getState().songs, id);
   if (!song) return;
-  switchTo(song);
+  // The song already in the studio keeps playing as it is: reloading it would drop unsaved edits.
+  if (useStudio.getState().songId !== song.id) switchTo(song);
   if (!useStudio.getState().playing) await togglePlay();
 }
 
 /**
- * Moves to the next song when the current one has played long enough. Never while the sound has
+ * Moves to the next song when the current one has played its loops. Never while the sound has
  * unsaved edits or is not a saved song: that would throw the user's work away.
  * Counts loops on the audio clock, so songs keep following one another in the background.
  * Returns a cleanup function, like `startBridge`.
  */
 export function startPlayback(): () => void {
-  let loops = 0;
-  const unsubscribe = useStudio.subscribe((state, prev) => {
-    if (!state.playing || state.songId !== prev.songId) loops = 0;
-  });
-  engine.onLoopEnd(() => {
+  engine.onLoopEnd((loops) => {
     const state = useStudio.getState();
-    loops++;
-    if (loops < loopsFor(state.params) || state.dirty || state.songId === null) return;
-    loops = 0;
+    if (loops < state.params.loops || state.dirty || state.songId === null) return;
     advance(true);
   });
-  return () => {
-    unsubscribe();
-    engine.onLoopEnd(undefined);
-  };
+  return () => engine.onLoopEnd(undefined);
 }

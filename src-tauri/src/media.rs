@@ -1,5 +1,5 @@
 //! What is playing, as the page reports it. The system's media controls show it (the tray menu on
-//! the desktop, the notification on Android), and on the desktop it decides what closing the
+//! the desktop, plus the media keys and flyout on Windows, the notification on Android), and on the desktop it decides what closing the
 //! window does: hide to the tray while music plays, quit otherwise.
 //!
 //! On Android, "playing" is also what keeps the app alive in the background: the Kotlin side holds
@@ -44,6 +44,8 @@ pub async fn set_now_playing<R: Runtime>(app: AppHandle<R>, title: String, subti
     *app.state::<NowPlayingState>().0.lock().unwrap_or_else(|e| e.into_inner()) = now.clone();
     #[cfg(desktop)]
     crate::tray::show_now_playing(&app, &now);
+    #[cfg(windows)]
+    crate::smtc::show_now_playing(&app, &now);
     #[cfg(target_os = "android")]
     android::show_now_playing(&app, &now).await?;
     Ok(())

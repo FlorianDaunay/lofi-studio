@@ -5,6 +5,7 @@ import { LearnPage } from "@/pages/LearnPage";
 import { LibraryPage } from "@/pages/LibraryPage";
 import { PlaylistsPage } from "@/pages/PlaylistsPage";
 import { SharePage } from "@/pages/SharePage";
+import { StatsPage } from "@/pages/StatsPage";
 import { StudioPage } from "@/pages/StudioPage";
 import { useNavigation, type Page } from "@/state/navigation";
 import { useWindowMode } from "@/state/window";
@@ -13,6 +14,7 @@ const PAGE_COMPONENTS: Record<Page, () => React.JSX.Element> = {
   studio: StudioPage,
   library: LibraryPage,
   playlists: PlaylistsPage,
+  stats: StatsPage,
   share: SharePage,
   learn: LearnPage,
 };
@@ -27,7 +29,8 @@ export default function App() {
     <div className="flex h-full">
       <Sidebar />
       {/* The page scrolls vertically only: a widget that is too wide must scroll inside itself, never pan the whole page. */}
-      <div className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden">
+      {/* Relative: absolutely positioned content (e.g. `sr-only` text) is placed in the page, not the window, which would scroll the whole app. */}
+      <div className="relative min-w-0 flex-1 overflow-y-auto overflow-x-hidden">
         {/* Keyed by page so each page starts scrolled to the top and with fresh local state. */}
         {/* On phones the bottom bars cover the end of the page: leave room for them. */}
         <main

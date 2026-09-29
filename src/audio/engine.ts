@@ -48,6 +48,9 @@ export interface EngineOptions {
   lowPower?: boolean;
 }
 
+/** The step being heard: `loop` counts the loops completed since the song started. */
+export type StepListener = (step: number, bar: number, loop: number) => void;
+
 export class AudioEngine {
   constructor(private readonly options: EngineOptions = {}) {}
 
@@ -56,10 +59,12 @@ export class AudioEngine {
   private params: EngineParams | undefined;
   private playing = false;
   private counter = 0;
+  /** Loops completed since `play()` or `restartLoop()`. */
+  private loop = 0;
   private shutdownTimer: ReturnType<typeof setTimeout> | undefined;
-  private stepListener: ((step: number, bar: number) => void) | undefined;
+  private stepListener: StepListener | undefined;
   private playingListener: ((playing: boolean) => void) | undefined;
-  private loopEndListener: (() => void) | undefined;
+  private loopEndListener: ((loops: number) => void) | undefined;
   private removeStateListener: (() => void) | undefined;
 
   get isPlaying() {
@@ -67,18 +72,27 @@ export class AudioEngine {
   }
 
   /**
+   * Seconds of audio rendered so far. It stands still while the context is suspended (stopped,
+   * or the computer asleep), so differences of it are exactly the time the music was heard.
+   */
+  get audioTime(): number {
+    return this.graph ? Tone.getContext().currentTime : 0;
+  }
+
+  /**
    * The step being heard, for the UI. It is delivered on animation frames, so set it to
    * `undefined` while the page is hidden: frames stop there and would only pile up.
    */
-  onStep(listener: ((step: number, bar: number) => void) | undefined) {
+  onStep(listener: StepListener | undefined) {
     this.stepListener = listener;
   }
 
   /**
    * Called as the last step of the progression is scheduled, on the audio clock: unlike
    * `onStep`, it keeps firing while the page is hidden (app in the background, window in the tray).
+   * Receives the number of loops completed since the song started.
    */
-  onLoopEnd(listener: (() => void) | undefined) {
+  onLoopEnd(listener: ((loops: number) => void) | undefined) {
     this.loopEndListener = listener;
   }
 
@@ -89,6 +103,7 @@ export class AudioEngine {
   /** Starts the loop over from the first step of the first bar (a new song began). */
   restartLoop() {
     this.counter = 0;
+    this.loop = 0;
   }
 
   /** Applies a new snapshot; only the parts that changed by reference touch the audio graph. */
@@ -108,6 +123,7 @@ export class AudioEngine {
 
     this.playing = true;
     this.counter = 0;
+    this.loop = 0;
     for (const layer of [graph.rain, graph.vinyl, graph.wind]) layer.setRunning(true);
     Tone.getTransport().start("+0.05");
     graph.master.gain.cancelScheduledValues(Tone.now());
@@ -258,6 +274,7 @@ export class AudioEngine {
 
     const step = this.counter % STEPS;
     const bar = Math.floor(this.counter / STEPS) % Math.max(1, p.progression.length);
+    const loop = this.loop;
     this.counter++;
     const chord = p.progression[bar];
     const stepSeconds = 60 / p.bpm / 4;
@@ -287,8 +304,12 @@ export class AudioEngine {
       graph.lead.play(midiToHz(leadMidi(chord, step)), stepSeconds * 1.6, at(), velocity(0.7));
     }
 
-    if (this.stepListener) Tone.getDraw().schedule(() => this.stepListener?.(step, bar), time);
+    // The loop number travels with the step, so a display never sees the next loop before its last step sounds.
+    if (this.stepListener) Tone.getDraw().schedule(() => this.stepListener?.(step, bar, loop), time);
     // Last: the listener may switch songs, which restarts the loop for the next tick.
-    if (step === STEPS - 1 && bar === p.progression.length - 1) this.loopEndListener?.();
+    if (step === STEPS - 1 && bar === p.progression.length - 1) {
+      this.loop++;
+      this.loopEndListener?.(this.loop);
+    }
   }
 }

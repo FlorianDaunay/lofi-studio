@@ -3,6 +3,7 @@ import { BUILT_IN_SONGS } from "./builtin";
 import { DEFAULT_PARAMS } from "./params";
 import { DEFAULT_PINNED, fillPinned } from "./pinned";
 import { sanitizeDraft, sanitizeParams } from "./sanitize";
+import { autoLoops } from "./playback";
 import { parseShare, shareFileName, toShareCode, toShareDocument, toShareFile, type Shareable } from "./share";
 import { MAX_BARS, parseChord, parseProgression, withBarAdded, withBarRemoved, withChord } from "./chords";
 import { RANDOMIZE_KINDS, randomize } from "./randomize";
@@ -31,6 +32,14 @@ describe("sanitizeParams", () => {
     expect(result.keys.adsr.attack).toBe(DEFAULT_PARAMS.keys.adsr.attack);
     expect(result.pattern.kick).toEqual(DEFAULT_PARAMS.pattern.kick);
     expect(result.progression).toEqual(DEFAULT_PARAMS.progression);
+  });
+
+  it("gives songs saved without a length about two minutes, and keeps whole loops", () => {
+    const { loops: _loops, ...old } = { ...DEFAULT_PARAMS, bpm: 60 };
+    expect(sanitizeParams(old).loops).toBe(autoLoops({ bpm: 60, progression: DEFAULT_PARAMS.progression }));
+    expect(sanitizeParams({ ...DEFAULT_PARAMS, loops: 7.6 }).loops).toBe(8);
+    expect(sanitizeParams({ ...DEFAULT_PARAMS, loops: 500 }).loops).toBe(32);
+    expect(sanitizeParams({ ...DEFAULT_PARAMS, loops: -2 }).loops).toBe(1);
   });
 
   it("survives non-object input", () => {

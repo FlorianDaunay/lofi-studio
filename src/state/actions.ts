@@ -1,6 +1,6 @@
 import { planImport, resolvePlaylist } from "@/songs/import-plan";
 import type { SharedPlaylist } from "@/songs/share";
-import type { Playlist, Song, SongDraft } from "@/songs/types";
+import { MAX_SONG_NAME, type Playlist, type Song, type SongDraft } from "@/songs/types";
 import { findSong, useLibrary } from "./library";
 import { currentSongParams, useStudio } from "./studio";
 
@@ -17,18 +17,22 @@ export function saveCurrentAs({ name, description }: Pick<SongDraft, "name" | "d
   return song;
 }
 
-/** True when the current song is one of the user's own (so it can be overwritten). */
-export function canOverwriteCurrent(): boolean {
-  const { songId } = useStudio.getState();
-  return findSong(useLibrary.getState().songs, songId)?.builtIn === false;
-}
-
-/** Overwrites the user's current song with the current sound. */
-export function saveCurrentChanges(): void {
+/**
+ * Saves the edits of the current song. The user's own song is updated in place; a built-in one
+ * never changes: the first save makes the user's copy (same name, "(mine)") and switches to it,
+ * so the next saves update that copy. Returns `undefined` when there is nothing to save or the
+ * library is full.
+ */
+export function saveCurrentChanges(): Song | undefined {
   const { params, songId, markSaved } = useStudio.getState();
-  if (!songId || !canOverwriteCurrent()) return;
-  useLibrary.getState().updateSong(songId, { params: currentSongParams(params) });
-  markSaved(songId);
+  const song = findSong(useLibrary.getState().songs, songId);
+  if (!song) return undefined;
+  if (song.builtIn) {
+    return saveCurrentAs({ name: `${song.name} (mine)`.slice(0, MAX_SONG_NAME), description: song.description });
+  }
+  useLibrary.getState().updateSong(song.id, { params: currentSongParams(params) });
+  markSaved(song.id);
+  return song;
 }
 
 /** Copies any song (typically a built-in) into the user's library. */

@@ -18,14 +18,16 @@ export function startBridge(): () => void {
   // The step display only matters while someone can see it (the app keeps playing in the background).
   const followSteps = () => {
     const visible = document.visibilityState === "visible";
-    engine.onStep(visible ? (step, bar) => getState().setStep(step, bar) : undefined);
-    if (!visible) getState().setStep(-1, -1);
+    engine.onStep(visible ? (step, bar, loop) => getState().setStep(step, bar, loop) : undefined);
+    if (!visible) getState().setStep(-1, -1, -1);
   };
   followSteps();
   document.addEventListener("visibilitychange", followSteps);
 
   const unsubscribe = subscribe((state, prev) => {
     if (state.params !== prev.params) engine.update(state.params);
+    // Another song was loaded (a save changes the id but keeps the params): it plays from its first bar.
+    if (state.songId !== prev.songId && state.params !== prev.params) engine.restartLoop();
   });
 
   return () => {
@@ -33,7 +35,7 @@ export function startBridge(): () => void {
     document.removeEventListener("visibilitychange", followSteps);
     engine.onPlayingChange(undefined);
     engine.onStep(undefined);
-    setState({ playing: false, step: -1, bar: -1 });
+    setState({ playing: false, step: -1, bar: -1, loop: -1 });
   };
 }
 

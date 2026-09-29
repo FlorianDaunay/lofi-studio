@@ -1,17 +1,13 @@
 import { Copy, Pencil, Play, Trash2 } from "lucide-react";
 import { PlaylistCover } from "@/components/library/PlaylistCover";
 import { Button } from "@/components/ui/button";
+import { formatDuration } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { songSeconds } from "@/songs/playback";
 import type { Playlist } from "@/songs/types";
 import { playSource } from "@/state/playback";
 import { usePlayer } from "@/state/player";
 import { usePlaylistSongs } from "@/state/selectors";
-
-export const formatDuration = (seconds: number) => {
-  const minutes = Math.round(seconds / 60);
-  return minutes < 60 ? `${minutes} min` : `${Math.floor(minutes / 60)} h ${String(minutes % 60).padStart(2, "0")}`;
-};
 
 interface PlaylistCardProps {
   playlist: Playlist;

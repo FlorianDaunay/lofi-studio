@@ -1,5 +1,6 @@
 import { parseProgression } from "./chords";
 import { DEFAULT_PARAMS, steps } from "./params";
+import { autoLoops } from "./playback";
 import type { Song, SongParams } from "./types";
 
 /**
@@ -36,6 +37,7 @@ const REST = "................";
 
 function build(d: Definition): Song {
   const row = (name: Row) => steps(d.pattern[name] ?? REST);
+  const progression = parseProgression(d.chords);
   return {
     id: d.id,
     name: d.name,
@@ -47,7 +49,8 @@ function build(d: Definition): Song {
       bpm: d.bpm,
       swing: d.swing,
       humanize: d.humanize ?? base.humanize,
-      progression: parseProgression(d.chords),
+      loops: autoLoops({ bpm: d.bpm, progression }),
+      progression,
       pattern: { kick: row("kick"), snare: row("snare"), hat: row("hat"), bass: row("bass"), keys: row("keys"), lead: row("lead") },
       keys: { ...base.keys, ...d.keys },
       bass: { ...base.bass, ...d.bass },

@@ -109,6 +109,11 @@ export interface EngineParams {
   /** Random timing/velocity looseness, 0..1. */
   humanize: number;
   volume: number;
+  /**
+   * How many times the loop plays before the player moves on to the next song. The engine
+   * itself loops forever and ignores it: only the player reads it.
+   */
+  loops: number;
   pattern: Pattern;
   progression: Chord[];
   keys: KeysParams;

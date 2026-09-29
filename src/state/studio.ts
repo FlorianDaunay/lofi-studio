@@ -6,7 +6,7 @@ import type { Song, SongParams } from "@/songs/types";
 import { DEFAULT_PANELS, type PanelId } from "./config";
 
 type Section = "keys" | "bass" | "drums" | "pad" | "lead" | "fx" | "ambience";
-type Global = Pick<EngineParams, "bpm" | "swing" | "humanize" | "volume">;
+type Global = Pick<EngineParams, "bpm" | "swing" | "humanize" | "volume" | "loops">;
 
 /** What is saved of the studio between sessions. */
 export interface StudioSnapshot {
@@ -32,6 +32,8 @@ interface StudioState extends StudioSnapshot {
   step: number;
   /** Bar (chord) being played, `-1` when stopped. */
   bar: number;
+  /** Loops of the current song already heard, `-1` when stopped. Display only, like `step`. */
+  loop: number;
   error: string | null;
   /** The sound before the last randomizations, newest last. Not persisted. */
   history: Backup[];
@@ -51,7 +53,7 @@ interface StudioState extends StudioSnapshot {
   setPanel: (panel: PanelId, open: boolean) => void;
   setPlaying: (playing: boolean) => void;
   setStarting: (starting: boolean) => void;
-  setStep: (step: number, bar: number) => void;
+  setStep: (step: number, bar: number, loop: number) => void;
   setError: (error: string | null) => void;
   hydrate: (snapshot: StudioSnapshot) => void;
 }
@@ -70,6 +72,7 @@ export const useStudio = create<StudioState>()((set) => {
     starting: false,
     step: -1,
     bar: -1,
+    loop: -1,
     error: null,
     history: [],
 
@@ -105,9 +108,9 @@ export const useStudio = create<StudioState>()((set) => {
     setProgression: (progression) => edit((p) => ({ ...p, progression })),
 
     setPanel: (panel, open) => set((s) => ({ panels: { ...s.panels, [panel]: open } })),
-    setPlaying: (playing) => set(playing ? { playing } : { playing, step: -1, bar: -1 }),
+    setPlaying: (playing) => set(playing ? { playing } : { playing, step: -1, bar: -1, loop: -1 }),
     setStarting: (starting) => set({ starting }),
-    setStep: (step, bar) => set({ step, bar }),
+    setStep: (step, bar, loop) => set({ step, bar, loop }),
     setError: (error) => set({ error }),
     hydrate: (snapshot) => set(snapshot),
   };

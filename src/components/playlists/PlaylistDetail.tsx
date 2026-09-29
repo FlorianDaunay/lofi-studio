@@ -5,6 +5,7 @@ import { SongCover } from "@/components/library/SongCover";
 import { songChords } from "@/components/library/song-display";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { formatClock, formatDuration } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { songSeconds } from "@/songs/playback";
 import type { Playlist } from "@/songs/types";
@@ -12,7 +13,6 @@ import { useLibrary } from "@/state/library";
 import { playSource } from "@/state/playback";
 import { useAllSongs, usePlaylistSongs } from "@/state/selectors";
 import { useStudio } from "@/state/studio";
-import { formatDuration } from "./PlaylistCard";
 
 interface PlaylistDetailProps {
   playlist: Playlist;
@@ -53,7 +53,7 @@ export function PlaylistDetail({ playlist, onBack, onRename, onCopy }: PlaylistD
           {playlist.description && <p className="text-sm text-text-secondary">{playlist.description}</p>}
           <p className="text-sm text-text-muted">
             {songs.length} {songs.length === 1 ? "song" : "songs"}
-            {songs.length > 0 && ` · about ${formatDuration(seconds)}`}
+            {songs.length > 0 && ` · ${formatDuration(seconds)}`}
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
             <Button variant="primary" disabled={songs.length === 0} onClick={() => void playSource(source)}>
@@ -90,6 +90,9 @@ export function PlaylistDetail({ playlist, onBack, onRename, onCopy }: PlaylistD
                   <span className="block truncate text-xs text-text-muted">
                     {song.params.bpm} BPM · {songChords(song)}
                   </span>
+                </span>
+                <span className="shrink-0 font-mono text-xs tabular-nums text-text-muted" title="Length">
+                  {formatClock(songSeconds(song.params))}
                 </span>
                 <Button variant="ghost" size="icon" onClick={() => void playSource(source, song.id)} aria-label={`Play ${song.name}`} title="Play from here">
                   <Play className="h-4 w-4" aria-hidden />
@@ -149,7 +152,9 @@ export function PlaylistDetail({ playlist, onBack, onRename, onCopy }: PlaylistD
                   <SongCover params={song.params} className="w-10 shrink-0" />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm font-medium">{song.name}</span>
-                    <span className="block truncate text-xs text-text-muted">{song.params.bpm} BPM</span>
+                    <span className="block truncate text-xs text-text-muted">
+                      {song.params.bpm} BPM · {formatClock(songSeconds(song.params))}
+                    </span>
                   </span>
                   <Button size="sm" onClick={() => addToPlaylist(playlist.id, song.id)} aria-label={`Add ${song.name}`}>
                     <Plus className="h-4 w-4" aria-hidden />

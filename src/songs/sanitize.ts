@@ -13,6 +13,7 @@ import {
   type Pattern,
 } from "@/audio/types";
 import { DEFAULT_PARAMS } from "./params";
+import { autoLoops } from "./playback";
 import { RANGES, clamp } from "./ranges";
 import { MAX_SONG_DESCRIPTION, MAX_SONG_NAME, type SongDraft, type SongParams } from "./types";
 
@@ -74,13 +75,17 @@ export function sanitizeParams(raw: unknown, d: EngineParams = DEFAULT_PARAMS): 
   const lead = isRecord(r.lead) ? r.lead : {};
   const fx = isRecord(r.fx) ? r.fx : {};
   const amb = isRecord(r.ambience) ? r.ambience : {};
+  const bpm = num(r.bpm, d.bpm, RANGES.bpm);
+  const chords = progression(r.progression, d.progression);
   return {
-    bpm: num(r.bpm, d.bpm, RANGES.bpm),
+    bpm,
     swing: num(r.swing, d.swing, RANGES.swing),
     humanize: num(r.humanize, d.humanize, RANGES.humanize),
     volume: num(r.volume, d.volume, RANGES.volume),
+    // Songs saved before the length setting keep the length they always had.
+    loops: Math.round(num(r.loops, autoLoops({ bpm, progression: chords }), RANGES.loops)),
     pattern: pattern(r.pattern, d.pattern),
-    progression: progression(r.progression, d.progression),
+    progression: chords,
     keys: {
       level: num(keys.level, d.keys.level, RANGES.level),
       voice: oneOf(keys.voice, KEYS_VOICES, d.keys.voice),

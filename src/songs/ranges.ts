@@ -1,6 +1,8 @@
 /** Min / max / step of every numeric control: shared by the sliders and the config sanitizer. */
 export const RANGES = {
   bpm: { min: 60, max: 100, step: 1 },
+  /** Loops per song (see `songs/playback.ts`). */
+  loops: { min: 1, max: 32, step: 1 },
   swing: { min: 0, max: 1, step: 0.01 },
   humanize: { min: 0, max: 1, step: 0.01 },
   volume: { min: 0, max: 1, step: 0.01 },

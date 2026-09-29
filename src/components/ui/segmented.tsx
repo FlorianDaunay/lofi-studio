@@ -6,13 +6,15 @@ interface SegmentedProps<T extends string> {
   value: T;
   options: readonly { value: T; label: string }[];
   onChange: (value: T) => void;
+  /** Hide the label (it stays as the accessible name). */
+  compact?: boolean;
 }
 
 /** A single-choice button group (radio semantics, arrow-key navigation). */
-export function Segmented<T extends string>({ label, value, options, onChange }: SegmentedProps<T>) {
+export function Segmented<T extends string>({ label, value, options, onChange, compact }: SegmentedProps<T>) {
   return (
     <div className="flex flex-col gap-1.5">
-      <span className="text-xs text-text-secondary">{label}</span>
+      {!compact && <span className="text-xs text-text-secondary">{label}</span>}
       <ToggleGroup.Root
         type="single"
         value={value}

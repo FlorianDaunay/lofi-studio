@@ -1,12 +1,14 @@
-import { LoaderCircle, Play, Save, Square } from "lucide-react";
+import { CopyPlus, LoaderCircle, Play, Save, Square } from "lucide-react";
 import { useState } from "react";
 import { SongCover } from "@/components/library/SongCover";
 import { SongForm } from "@/components/library/SongForm";
 import { PlayerControls } from "@/components/player/PlayerControls";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
+import { formatClock } from "@/lib/format";
+import { loopSeconds, songSeconds } from "@/songs/playback";
 import { RANGES } from "@/songs/ranges";
-import { canOverwriteCurrent, saveCurrentAs, saveCurrentChanges } from "@/state/actions";
+import { saveCurrentAs, saveCurrentChanges } from "@/state/actions";
 import { togglePlay } from "@/state/bridge";
 import { useCurrentSong } from "@/state/selectors";
 import { useStudio } from "@/state/studio";
@@ -23,8 +25,11 @@ export function Transport() {
   const setGlobal = useStudio((s) => s.setGlobal);
   const song = useCurrentSong();
   const [saving, setSaving] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
 
-  const canSaveChanges = dirty && song !== undefined && !song.builtIn && canOverwriteCurrent();
+  // A built-in song never changes: its "Save" makes the user's own copy.
+  const canSaveChanges = dirty && song !== undefined;
+  const save = () => setNotice(saveCurrentChanges() ? null : "Your library is full: delete a song first.");
 
   return (
     <section aria-label="Transport" className="surface flex flex-wrap items-center gap-5 p-5">
@@ -53,10 +58,12 @@ export function Transport() {
           <span className="truncate">{song?.name ?? "Custom sound"}</span>
           {dirty && song && <span className="rounded-pill bg-warning/15 px-2 py-0.5 text-xs font-medium text-warning">Modified</span>}
         </h2>
-        <p className="font-mono text-xs text-text-secondary">{bpm} BPM</p>
-        {error && (
+        <p className="font-mono text-xs text-text-secondary">
+          {bpm} BPM · {formatClock(songSeconds(params))}
+        </p>
+        {(error ?? notice) && (
           <p role="alert" className="mt-1 text-xs text-danger">
-            {error}
+            {error ?? notice}
           </p>
         )}
       </div>
@@ -69,16 +76,29 @@ export function Transport() {
           format={(v) => `${Math.round(v * 100)}%`}
           onChange={(v) => setGlobal({ volume: v })}
         />
+        {/* Whole loops, so a song always ends on its last chord; the resulting time is what people think in. */}
+        <Slider
+          label="Song length"
+          {...RANGES.loops}
+          value={params.loops}
+          format={(loops) => `${loops} × ${formatClock(loopSeconds(params))} = ${formatClock(loops * loopSeconds(params))}`}
+          onChange={(loops) => setGlobal({ loops })}
+        />
         <div className="flex flex-wrap gap-2">
           <RandomizeMenu />
           {canSaveChanges && (
-            <Button size="sm" variant="primary" onClick={saveCurrentChanges}>
+            <Button
+              size="sm"
+              variant="primary"
+              onClick={save}
+              title={song.builtIn ? `Save your own copy of “${song.name}” (the built-in song stays as it is)` : `Update “${song.name}”`}
+            >
               <Save className="h-4 w-4" aria-hidden />
               Save
             </Button>
           )}
-          <Button size="sm" onClick={() => setSaving(true)}>
-            <Save className="h-4 w-4" aria-hidden />
+          <Button size="sm" onClick={() => setSaving(true)} title="Save as a new song (the current one stays as it is)">
+            <CopyPlus className="h-4 w-4" aria-hidden />
             Save as…
           </Button>
         </div>

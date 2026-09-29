@@ -1,6 +1,7 @@
 import type { EngineParams, Pattern } from "@/audio/types";
 import { STEPS } from "@/audio/types";
 import { parseProgression } from "./chords";
+import { autoLoops } from "./playback";
 
 /** `"x..x"` style pattern: `x` is a hit, anything else a rest. */
 export function steps(text: string): boolean[] {
@@ -20,11 +21,14 @@ export const emptyPattern = (): Pattern => ({
 
 export const DEFAULT_PROGRESSION = parseProgression("Dm9 G13 Cmaj7 A7");
 
+const DEFAULT_BPM = 78;
+
 export const DEFAULT_PARAMS: EngineParams = {
-  bpm: 78,
+  bpm: DEFAULT_BPM,
   swing: 0.45,
   humanize: 0.4,
   volume: 0.8,
+  loops: autoLoops({ bpm: DEFAULT_BPM, progression: DEFAULT_PROGRESSION }),
   pattern: {
     kick: steps("x......x..x....."),
     snare: steps("....x.......x..."),

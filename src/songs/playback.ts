@@ -8,19 +8,34 @@ export type RepeatMode = (typeof REPEAT_MODES)[number];
 /** Where the next songs come from: the whole library or one playlist. */
 export type PlaySource = { kind: "library" } | { kind: "playlist"; id: string };
 
-/** How long a song plays before the next one starts, when nobody skips it. */
+/** The length a new or older song gets: its loop repeated to last about this long. */
 export const TARGET_SONG_SECONDS = 120;
-const MAX_LOOPS = 16;
+/** `autoLoops` stays under this; a user may still pick up to `RANGES.loops.max`. */
+const MAX_AUTO_LOOPS = 16;
 
 type Timing = Pick<SongParams, "bpm" | "progression">;
 
-const loopSeconds = (params: Timing) => params.progression.length * STEPS * (60 / params.bpm / 4);
+/** One pass through the whole progression. */
+export const loopSeconds = (params: Timing): number => params.progression.length * STEPS * (60 / params.bpm / 4);
 
-/** A song is a short loop; it is repeated until it lasts about `TARGET_SONG_SECONDS`. */
-export const loopsFor = (params: Timing): number => Math.min(MAX_LOOPS, Math.max(1, Math.round(TARGET_SONG_SECONDS / loopSeconds(params))));
+/** The loop count that makes a song last about `TARGET_SONG_SECONDS`. */
+export const autoLoops = (params: Timing): number =>
+  Math.min(MAX_AUTO_LOOPS, Math.max(1, Math.round(TARGET_SONG_SECONDS / loopSeconds(params))));
 
 /** How long the song plays before the next one starts. */
-export const songSeconds = (params: Timing): number => loopsFor(params) * loopSeconds(params);
+export const songSeconds = (params: Timing & Pick<SongParams, "loops">): number => params.loops * loopSeconds(params);
+
+/**
+ * How far into the song (0..1) the player is, from what the engine reports. A song that keeps
+ * looping (unsaved edits never advance) starts the bar over each time it would have ended.
+ */
+export function songProgress(params: Timing & Pick<SongParams, "loops">, loop: number, bar: number, step: number): number {
+  if (loop < 0 || bar < 0 || step < 0) return 0;
+  const loopSteps = params.progression.length * STEPS;
+  const loops = Math.max(1, params.loops);
+  const within = Math.min(loopSteps, bar * STEPS + step + 1);
+  return ((loop % loops) * loopSteps + within) / (loops * loopSteps);
+}
 
 interface ShuffleOptions {
   /** Placed first (used when shuffle starts: the song already playing stays where it is). */

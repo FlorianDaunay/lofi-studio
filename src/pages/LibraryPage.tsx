@@ -14,6 +14,8 @@ import { shareFileName, toShareFile } from "@/songs/share";
 import type { Song } from "@/songs/types";
 import { copySong, saveCurrentAs } from "@/state/actions";
 import { useLibrary } from "@/state/library";
+import { useNavigation } from "@/state/navigation";
+import { playSource } from "@/state/playback";
 import { useCurrentSong } from "@/state/selectors";
 import { useStudio } from "@/state/studio";
 
@@ -26,6 +28,8 @@ export function LibraryPage() {
   const updateSong = useLibrary((s) => s.updateSong);
   const deleteSong = useLibrary((s) => s.deleteSong);
   const loadSong = useStudio((s) => s.loadSong);
+  const dirty = useStudio((s) => s.dirty);
+  const go = useNavigation((s) => s.go);
   const current = useCurrentSong();
 
   const [query, setQuery] = useState("");
@@ -55,13 +59,18 @@ export function LibraryPage() {
       key={song.id}
       song={song}
       current={song.id === current?.id}
+      modified={song.id === current?.id && dirty}
       pinnedSlot={pinned.includes(song.id) ? pinned.indexOf(song.id) + 1 : null}
-      onLoad={() => loadSong(song)}
+      onPlay={() => void playSource({ kind: "library" }, song.id)}
+      onOpen={() => {
+        if (song.id !== current?.id) loadSong(song);
+        go("studio");
+      }}
       onPin={() => setPinning(song)}
       onPlaylist={() => setListing(song)}
       onExport={() => void exportSong(song)}
       onCopy={song.builtIn ? () => setNotice(copySong(song) ? `Saved a copy of “${song.name}” in My songs.` : "Your library is full.") : undefined}
-      onEdit={song.builtIn ? undefined : () => setEditing(song)}
+      onRename={song.builtIn ? undefined : () => setEditing(song)}
       onDelete={song.builtIn ? undefined : () => setDeleting(song)}
     />
   );

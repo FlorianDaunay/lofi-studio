@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Android 12+: what Android's automatic backup (Google account) and device-to-device transfer keep,
+  so a reinstall or a new phone gets the library back. Only the app's own data: config.json
+  (songs, playlists, stats, settings; Tauri's app-config dir is the app's data dir root) and the
+  web view's local storage (the theme). Web view caches are left out.
+-->
+<data-extraction-rules>
+  <cloud-backup>
+    <include domain="root" path="config.json" />
+    <include domain="root" path="app_webview/Default/Local Storage" />
+  </cloud-backup>
+  <device-transfer>
+    <include domain="root" path="config.json" />
+    <include domain="root" path="app_webview/Default/Local Storage" />
+  </device-transfer>
+</data-extraction-rules>
