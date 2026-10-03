@@ -35,7 +35,7 @@ const CONTENTS = [
   ["Chords", "the harmony, one chord per bar"],
   ["Rhythm", "which drum, bass and piano steps play"],
   ["Sound", "the tone of the piano and the effects"],
-  ["Atmosphere", "the rain, vinyl and wind levels"],
+  ["Atmosphere", "background sounds: rain, vinyl, birds, a fireplace..."],
 ] as const;
 
 export function PickAMood() {
@@ -87,6 +87,10 @@ export function Atmosphere() {
           </li>
         ))}
       </ul>
+      <P>
+        The other layers mix the same tricks with short synthesized tones: a bird is a sine whose pitch dives, a wind chime rings the notes of the chord being
+        played, and thunder is a deep rumble that swells and dies away every half minute or so.
+      </P>
       <Try title="Mix your weather">
         <PlayChip />
         <Ambience />

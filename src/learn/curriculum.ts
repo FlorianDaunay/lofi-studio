@@ -11,7 +11,7 @@ export const LEVELS = [
     lessons: [
       { id: "first-loop", title: "Your first loop", summary: "What you hear, and where it comes from." },
       { id: "pick-a-mood", title: "Pick a mood", summary: "Songs, and the four pinned on the Studio." },
-      { id: "atmosphere", title: "Add atmosphere", summary: "Rain, vinyl crackle and wind, made from noise." },
+      { id: "atmosphere", title: "Add atmosphere", summary: "Rain, vinyl, birds, a fireplace: sounds made from noise and tones." },
     ],
   },
   {
@@ -30,7 +30,7 @@ export const LEVELS = [
     title: "Sound design",
     blurb: "Choose the instruments, shape them, dirty them up.",
     lessons: [
-      { id: "instruments", title: "Pick your band", summary: "Five instruments, each with a choice of voices." },
+      { id: "instruments", title: "Pick your band", summary: "A small band, each player with a choice of voices." },
       { id: "adsr", title: "Shape a note", summary: "Attack, decay, sustain, release." },
       { id: "filter-lfo", title: "Filter and wobble", summary: "A knob that turns by itself." },
       { id: "lofi-fx", title: "The lo-fi recipe", summary: "Muffle, wobble, warmth and room." },

@@ -8,13 +8,14 @@ import { startMediaSync } from "./state/media";
 import { restoreConfig, startAutosave } from "./state/persist";
 import { startHistorySync } from "./state/navigation";
 import { startPlayback } from "./state/playback";
+import { startSleepTimer } from "./state/sleep";
 import { startWindowSync } from "./state/window";
 import "./themes"; // applies the saved theme before the first paint of the app
 
 /** Owns the store <-> audio engine, store <-> disk and store <-> app shell wiring for the lifetime of the UI. */
 function Root() {
   useEffect(() => {
-    const stops = [startBridge(), startAutosave(), startPlayback(), startHistorySync(), startMediaSync(), startWindowSync(), startActivityTracking()];
+    const stops = [startBridge(), startAutosave(), startPlayback(), startHistorySync(), startMediaSync(), startWindowSync(), startActivityTracking(), startSleepTimer()];
     return () => {
       for (const stop of stops) stop();
     };

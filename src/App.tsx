@@ -1,5 +1,7 @@
 import { MobileNav } from "@/components/layout/MobileNav";
+import { MediaArtwork } from "@/components/player/MediaArtwork";
 import { MiniPlayer } from "@/components/player/MiniPlayer";
+import { isMobileApp } from "@/lib/runtime";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { LearnPage } from "@/pages/LearnPage";
 import { LibraryPage } from "@/pages/LibraryPage";
@@ -41,6 +43,7 @@ export default function App() {
         </main>
       </div>
       <MobileNav />
+      {isMobileApp && <MediaArtwork />}
     </div>
   );
 }

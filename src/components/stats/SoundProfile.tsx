@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { AMBIENCE_LAYERS } from "@/audio";
+import { AMBIENCE_LABELS } from "@/components/studio/ambience-labels";
 import { BASS_VOICE_OPTIONS, DRUM_KIT_OPTIONS, KEYS_VOICE_OPTIONS } from "@/components/studio/instrument-labels";
 import { formatSpent } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -157,11 +159,28 @@ function Favorite({ instrument, shares, labels }: { instrument: string; shares: 
 function Meter({ label, value }: { label: string; value: number }) {
   return (
     <div className="flex items-center gap-3 text-xs">
-      <span className="w-12 shrink-0 text-text-muted">{label}</span>
+      <span className="w-20 shrink-0 truncate text-text-muted">{label}</span>
       <span className="h-1.5 flex-1 overflow-hidden rounded-pill bg-surface-hover" aria-hidden>
         <span className="block h-full rounded-pill bg-accent" style={{ width: `${Math.round(value * 100)}%` }} />
       </span>
       <span className="w-9 text-right tabular-nums">{Math.round(value * 100)} %</span>
+    </div>
+  );
+}
+
+/** The ambience layers heard the most, loudest first. */
+function TopAmbience({ ambience }: { ambience: Profile["ambience"] }) {
+  const top = AMBIENCE_LAYERS.filter((id) => ambience[id] >= 0.01)
+    .sort((a, b) => ambience[b] - ambience[a])
+    .slice(0, 4);
+  return (
+    <div className="flex flex-col gap-1.5">
+      <p className="text-xs text-text-muted">Ambience</p>
+      {top.length > 0 ? (
+        top.map((id) => <Meter key={id} label={AMBIENCE_LABELS[id].label} value={ambience[id]} />)
+      ) : (
+        <p className="text-xs text-text-muted">No ambience: just the music.</p>
+      )}
     </div>
   );
 }
@@ -187,12 +206,7 @@ export function SoundProfile({ profile }: { profile: Profile | null }) {
             <Favorite instrument="Bass" shares={profile.voices.bass} labels={BASS_VOICE_OPTIONS} />
             <Favorite instrument="Drums" shares={profile.voices.drums} labels={DRUM_KIT_OPTIONS} />
           </div>
-          <div className="flex flex-col gap-1.5">
-            <p className="text-xs text-text-muted">Ambience</p>
-            <Meter label="Rain" value={profile.ambience.rain} />
-            <Meter label="Vinyl" value={profile.ambience.vinyl} />
-            <Meter label="Wind" value={profile.ambience.wind} />
-          </div>
+          <TopAmbience ambience={profile.ambience} />
         </div>
       </div>
     </StatCard>

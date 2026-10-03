@@ -44,8 +44,8 @@ export function Instruments() {
   return (
     <>
       <P>
-        A song here is played by a small band of five: <Term>keys</Term> play the chords, the <Term>bass</Term> plays their root, the <Term>drums</Term> keep
-        time, a <Term>pad</Term> holds long soft chords underneath, and a <Term>melody</Term> picks notes from each chord to make a tune.
+        A song here is played by a small band of five: <Term>keys</Term> play the chords, the <Term>bass</Term> plays their root, the <Term>drums</Term> (with some
+        hand percussion) keep time, a <Term>pad</Term> holds long soft chords underneath, and a <Term>melody</Term> picks notes from each chord to make a tune.
       </P>
       <P>
         Each instrument has a few <Term>voices</Term>: the same notes, synthesized a different way. Swapping the keys from electric piano to guitar changes the

@@ -6,6 +6,7 @@ const TRACK_LABELS: Record<TrackId, string> = {
   kick: "Kick",
   snare: "Snare",
   hat: "Hi-hat",
+  perc: "Perc",
   bass: "Bass",
   keys: "Keys",
   lead: "Melody",

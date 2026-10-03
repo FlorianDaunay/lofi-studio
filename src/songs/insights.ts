@@ -1,3 +1,5 @@
+import { AMBIENCE_LAYERS, type AmbienceParams } from "@/audio/types";
+import { SILENT_AMBIENCE } from "./params";
 import { RANGES } from "./ranges";
 import { dayKey, type DayStats, type Stats } from "./stats";
 import type { SongParams } from "./types";
@@ -166,10 +168,10 @@ export interface SoundProfile {
   bpm: number;
   /** Each 0..1, weighted by listening time. */
   traits: Record<SoundTrait, number>;
-  /** Share of listening (0..1) per voice, for each instrument. */
-  voices: { keys: Record<string, number>; bass: Record<string, number>; drums: Record<string, number> };
+  /** Share of listening (0..1) per voice, for each instrument; `"off"` for a silent pad or melody. */
+  voices: Record<ProfileInstrument, Record<string, number>>;
   /** Average ambience levels, 0..1. */
-  ambience: { rain: number; vinyl: number; wind: number };
+  ambience: AmbienceParams;
   /** Listening per 5-BPM band, keyed by the band's lowest tempo. */
   tempos: Record<string, number>;
 }
@@ -186,6 +188,18 @@ const traitsOf = (p: SongParams): Record<SoundTrait, number> => ({
 
 export const TEMPO_BAND = 5;
 
+export const PROFILE_INSTRUMENTS = ["keys", "bass", "drums", "pad", "lead"] as const;
+export type ProfileInstrument = (typeof PROFILE_INSTRUMENTS)[number];
+
+/** The voice of each instrument in a song (the kit for the drums), `"off"` for a silent pad or melody. */
+const voicesOf = (p: SongParams): Record<ProfileInstrument, string> => ({
+  keys: p.keys.voice,
+  bass: p.bass.voice,
+  drums: p.drums.kit,
+  pad: p.pad.level > 0 ? p.pad.voice : "off",
+  lead: p.lead.level > 0 ? p.lead.voice : "off",
+});
+
 /** The average sound of what was heard, each song weighted by its listening time. `null` with none. */
 export function soundProfile(heard: readonly { params: SongParams; seconds: number }[]): SoundProfile | null {
   const total = heard.reduce((sum, item) => sum + Math.max(0, item.seconds), 0);
@@ -194,8 +208,8 @@ export function soundProfile(heard: readonly { params: SongParams; seconds: numb
   const profile: SoundProfile = {
     bpm: 0,
     traits,
-    voices: { keys: {}, bass: {}, drums: {} },
-    ambience: { rain: 0, vinyl: 0, wind: 0 },
+    voices: { keys: {}, bass: {}, drums: {}, pad: {}, lead: {} },
+    ambience: { ...SILENT_AMBIENCE },
     tempos: {},
   };
   for (const { params, seconds } of heard) {
@@ -204,12 +218,12 @@ export function soundProfile(heard: readonly { params: SongParams; seconds: numb
     profile.bpm += params.bpm * weight;
     const own = traitsOf(params);
     for (const trait of SOUND_TRAITS) traits[trait] += own[trait] * weight;
-    profile.voices.keys[params.keys.voice] = (profile.voices.keys[params.keys.voice] ?? 0) + weight;
-    profile.voices.bass[params.bass.voice] = (profile.voices.bass[params.bass.voice] ?? 0) + weight;
-    profile.voices.drums[params.drums.kit] = (profile.voices.drums[params.drums.kit] ?? 0) + weight;
-    profile.ambience.rain += params.ambience.rain * weight;
-    profile.ambience.vinyl += params.ambience.vinyl * weight;
-    profile.ambience.wind += params.ambience.wind * weight;
+    const voices = voicesOf(params);
+    for (const instrument of PROFILE_INSTRUMENTS) {
+      const shares = profile.voices[instrument];
+      shares[voices[instrument]] = (shares[voices[instrument]] ?? 0) + weight;
+    }
+    for (const id of AMBIENCE_LAYERS) profile.ambience[id] += params.ambience[id] * weight;
     const band = String(Math.floor(params.bpm / TEMPO_BAND) * TEMPO_BAND);
     profile.tempos[band] = (profile.tempos[band] ?? 0) + seconds;
   }

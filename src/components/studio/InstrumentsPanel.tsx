@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 import { RANGES } from "@/songs/ranges";
 import { useStudio } from "@/state/studio";
 import { AdsrEditor } from "./AdsrEditor";
-import { BASS_VOICE_OPTIONS, DRUM_KIT_OPTIONS, KEYS_VOICE_OPTIONS, LEAD_VOICE_OPTIONS, PAD_VOICE_OPTIONS } from "./instrument-labels";
+import { BASS_VOICE_OPTIONS, DRUM_KIT_OPTIONS, KEYS_VOICE_OPTIONS, LEAD_VOICE_OPTIONS, PAD_VOICE_OPTIONS, PERC_VOICE_OPTIONS } from "./instrument-labels";
 
 const WAVES: { value: Waveform; label: string }[] = [
   { value: "sine", label: "Sine" },
@@ -81,6 +81,11 @@ function DrumsControls() {
       <Slider label="Kick" {...RANGES.level} value={drums.kick} format={percent} onChange={(kick) => setSection("drums", { kick })} />
       <Slider label="Snare" {...RANGES.level} value={drums.snare} format={percent} onChange={(snare) => setSection("drums", { snare })} />
       <Slider label="Hi-hat" {...RANGES.level} value={drums.hat} format={percent} onChange={(hat) => setSection("drums", { hat })} />
+      <div className="mt-2 flex flex-col gap-3 border-t pt-4">
+        <Hint>Hand percussion, played on the Perc row of the sequencer.</Hint>
+        <Segmented label="Percussion" value={drums.percVoice} options={PERC_VOICE_OPTIONS} onChange={(percVoice) => setSection("drums", { percVoice })} />
+        <Slider label="Percussion level" {...RANGES.level} value={drums.perc} format={percent} onChange={(perc) => setSection("drums", { perc })} />
+      </div>
     </div>
   );
 }
@@ -141,13 +146,13 @@ export function InstrumentsPanel() {
   const setPanel = useStudio((s) => s.setPanel);
   const keysOn = useStudio((s) => s.params.keys.level > 0);
   const bassOn = useStudio((s) => s.params.bass.level > 0);
-  const drumsOn = useStudio((s) => s.params.drums.kick + s.params.drums.snare + s.params.drums.hat > 0);
+  const drumsOn = useStudio((s) => s.params.drums.kick + s.params.drums.snare + s.params.drums.hat + s.params.drums.perc > 0);
   const padOn = useStudio((s) => s.params.pad.level > 0);
   const leadOn = useStudio((s) => s.params.lead.level > 0);
   return (
     <Panel
       title="Instruments"
-      description="Five instruments, each with its own voices: keys, bass, drums, pad and melody"
+      description="Keys, bass, drums and percussion, pad and melody, each with its own voices"
       icon={<AudioLines className="h-4 w-4" />}
       open={open}
       onOpenChange={(o) => setPanel("instruments", o)}

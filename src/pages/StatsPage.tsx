@@ -3,6 +3,7 @@ import { useState } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { ActivityChart } from "@/components/stats/ActivityChart";
 import { ListeningClock } from "@/components/stats/ListeningClock";
+import { MadeForYou } from "@/components/stats/MadeForYou";
 import { SongSpotlight } from "@/components/stats/SongSpotlight";
 import { SoundProfile } from "@/components/stats/SoundProfile";
 import { SourcesCard } from "@/components/stats/SourcesCard";
@@ -109,6 +110,7 @@ export function StatsPage() {
 
           <ListeningClock week={current.week} />
           <SoundProfile profile={view.profile} />
+          {view.profile && <MadeForYou key={range} profile={view.profile} />}
 
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
             {spotlight && <SourcesCard view={view} />}

@@ -1,3 +1,4 @@
+import { deepEqual } from "@/songs/equal";
 import { planImport, resolvePlaylist } from "@/songs/import-plan";
 import type { SharedPlaylist } from "@/songs/share";
 import { MAX_SONG_NAME, type Playlist, type Song, type SongDraft } from "@/songs/types";
@@ -32,6 +33,17 @@ export function saveCurrentChanges(): Song | undefined {
   }
   useLibrary.getState().updateSong(song.id, { params: currentSongParams(params) });
   markSaved(song.id);
+  return song;
+}
+
+/**
+ * Adds a song that is not in the library yet (a "Made for you" song). When it is the sound in the
+ * studio, it becomes the studio's current song, saved, so it can follow the playlist like any other.
+ */
+export function saveDraft(draft: SongDraft): Song | undefined {
+  const [song] = useLibrary.getState().addSongs([draft]);
+  const { params, songId, markSaved } = useStudio.getState();
+  if (song && songId === null && deepEqual(currentSongParams(params), draft.params)) markSaved(song.id);
   return song;
 }
 

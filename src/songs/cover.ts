@@ -1,4 +1,4 @@
-import { CHORD_QUALITIES, STEPS, TRACKS, type Chord } from "@/audio/types";
+import { CHORD_QUALITIES, STEPS, type Chord, type TrackId } from "@/audio/types";
 import { RANGES } from "./ranges";
 import type { SongParams } from "./types";
 
@@ -53,12 +53,12 @@ const lognorm = (value: number, { min, max }: { min: number; max: number }) => M
 const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
 
 /** Circular mean of the chord roots, so C and B (a semitone apart) get neighboring hues. */
-function keyHue(progression: readonly Chord[]): number {
+function keyHue(progression: readonly Chord[], transpose: number): number {
   let x = 0;
   let y = 0;
   for (const { pc } of progression) {
-    x += Math.cos((pc / 12) * 2 * Math.PI);
-    y += Math.sin((pc / 12) * 2 * Math.PI);
+    x += Math.cos(((pc + transpose) / 12) * 2 * Math.PI);
+    y += Math.sin(((pc + transpose) / 12) * 2 * Math.PI);
   }
   return (Math.atan2(y, x) / (2 * Math.PI) + 1) % 1;
 }
@@ -69,13 +69,16 @@ function keyHue(progression: readonly Chord[]): number {
  */
 function worldScores(p: SongParams): Record<CoverWorld, number> {
   const drums = (p.drums.kick + p.drums.snare + p.drums.hat) / 3;
+  const a = p.ambience;
+  const voice = (instrument: string, wanted: string, weight: number) => (instrument === wanted ? weight : 0);
   return {
-    city: p.ambience.rain * 1.1 + (p.keys.voice === "rhodes" ? 0.15 : 0) + (p.bass.voice === "synth" ? 0.2 : 0),
-    sea: p.fx.reverb * 0.8 + (p.keys.voice === "vibes" ? 0.45 : 0) + (p.pad.voice === "air" ? p.pad.level * 0.3 : 0),
-    mountains: p.ambience.wind * 1.3 + (p.pad.voice === "strings" ? p.pad.level * 0.6 : 0),
-    forest: (p.keys.voice === "guitar" ? 0.55 : 0) + (p.lead.voice === "flute" ? p.lead.level * 0.4 : 0),
-    desert: p.ambience.vinyl * 0.7 + (p.keys.voice === "organ" ? 0.4 : 0),
-    fields: (p.keys.voice === "piano" ? 0.45 : 0) + (1 - drums) * 0.3,
+    city: a.rain * 1.1 + a.city * 1.4 + a.train * 0.8 + voice(p.keys.voice, "rhodes", 0.15) + voice(p.keys.voice, "wurli", 0.2) + voice(p.bass.voice, "synth", 0.2),
+    sea: p.fx.reverb * 0.8 + a.waves * 1.5 + voice(p.keys.voice, "vibes", 0.45) + voice(p.pad.voice, "air", p.pad.level * 0.3),
+    mountains: a.wind * 1.3 + a.thunder * 0.7 + a.chimes * 0.5 + voice(p.pad.voice, "strings", p.pad.level * 0.6),
+    forest:
+      a.birds * 0.9 + a.leaves * 0.9 + a.stream * 0.8 + a.fire * 0.7 + voice(p.keys.voice, "guitar", 0.55) + voice(p.keys.voice, "kalimba", 0.3) + voice(p.lead.voice, "flute", p.lead.level * 0.4),
+    desert: a.vinyl * 0.7 + voice(p.keys.voice, "organ", 0.4),
+    fields: a.crickets * 0.9 + a.frogs * 0.8 + voice(p.keys.voice, "piano", 0.45) + (1 - drums) * 0.3,
   };
 }
 
@@ -84,8 +87,14 @@ export function coverWorld(params: SongParams): CoverWorld {
   return COVER_WORLDS.reduce((best, world) => (scores[world] > scores[best] ? world : best));
 }
 
-const trackLevel = (params: SongParams, track: (typeof TRACKS)[number]): number =>
+/** The rows the cover's pattern strip shows (it has room for six). */
+const COVER_TRACKS = ["kick", "snare", "hat", "bass", "keys", "lead"] as const satisfies readonly TrackId[];
+
+const trackLevel = (params: SongParams, track: (typeof COVER_TRACKS)[number]): number =>
   track === "keys" ? params.keys.level : track === "bass" ? params.bass.level : track === "lead" ? params.lead.level : params.drums[track];
+
+/** Night sounds (crickets, frogs, a city at night) pull the sky towards night. */
+const nightSounds = (p: SongParams) => p.ambience.crickets * 0.5 + p.ambience.frogs * 0.4 + p.ambience.city * 0.3;
 
 export function coverScene(params: SongParams): CoverScene {
   const { keys, bass, fx, ambience, progression } = params;
@@ -93,7 +102,7 @@ export function coverScene(params: SongParams): CoverScene {
   return {
     world: coverWorld(params),
     // The key sets the color; tempo and brightness nudge it, so songs in one key still differ.
-    hue: (keyHue(progression) + 0.25 * norm(params.bpm, RANGES.bpm) + 0.12 * lognorm(keys.cutoff, RANGES.keysCutoff)) % 1,
+    hue: (keyHue(progression, params.transpose) + 0.25 * norm(params.bpm, RANGES.bpm) + 0.12 * lognorm(keys.cutoff, RANGES.keysCutoff)) % 1,
     drift: fx.reverb,
     lightness,
     saturation: clamp01(fx.warmth * 0.7 + keys.level * 0.3),
@@ -114,14 +123,14 @@ export function coverScene(params: SongParams): CoverScene {
     rain: ambience.rain,
     wind: ambience.wind,
     vinyl: ambience.vinyl,
-    night: clamp01((0.75 - lightness) * 2.5),
+    night: clamp01((0.75 - lightness) * 2.5 + nightSounds(params)),
     clouds: params.pad.level,
     birds: params.lead.level,
     landmarks: progression.map((chord) => ({
       height: chord.pc / 11,
       tint: CHORD_QUALITIES.indexOf(chord.quality) / (CHORD_QUALITIES.length - 1),
     })),
-    tracks: TRACKS.map((track) => ({
+    tracks: COVER_TRACKS.map((track) => ({
       level: trackLevel(params, track),
       steps: Array.from({ length: STEPS }, (_, i) => (params.pattern[track][i] ? 1 : 0)),
     })),

@@ -11,6 +11,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.ServiceInfo
+import android.graphics.Bitmap
 import android.graphics.drawable.Icon
 import android.media.AudioAttributes
 import android.media.AudioFocusRequest
@@ -21,10 +22,19 @@ import android.media.session.PlaybackState
 import android.os.Build
 import android.os.IBinder
 import android.os.PowerManager
+import android.os.SystemClock
 import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
 
-data class NowPlaying(val title: String, val subtitle: String, val playing: Boolean)
+/** What the page reports. [accent] is the theme's accent (ARGB), null from an older page. */
+data class NowPlaying(
+  val title: String,
+  val subtitle: String,
+  val playing: Boolean,
+  val durationMs: Long = 0,
+  val positionMs: Long = 0,
+  val accent: Int? = null,
+)
 
 /**
  * Keeps the app alive while music plays with the screen off or another app in front, and shows
@@ -44,9 +54,12 @@ class PlaybackService : Service() {
     private var instance: PlaybackService? = null
     /** What to show once a starting service is created. */
     private var pending: NowPlaying? = null
+    /** The song's cover: the page only sends it when it changes, so it is kept across updates. */
+    private var artwork: Bitmap? = null
 
-    /** On the main thread. Starts the service on the first play; before that there is nothing to show. */
-    fun show(context: Context, nowPlaying: NowPlaying) {
+    /** On the main thread. Starts the service on the first play; before that there is nothing to show. `cover` null keeps the last one. */
+    fun show(context: Context, nowPlaying: NowPlaying, cover: Bitmap? = null) {
+      if (cover != null) artwork = cover
       val service = instance
       when {
         service != null -> service.show(nowPlaying)
@@ -151,14 +164,23 @@ class PlaybackService : Service() {
     super.onDestroy()
   }
 
+  /**
+   * The session is what the system's player draws (notification shade, lock screen, quick
+   * settings): title, source, cover, and a progress bar from the length and the position, which
+   * it moves on by itself while playing. There is no seek action: a song cannot be scrubbed.
+   */
   private fun show(next: NowPlaying) {
     nowPlaying = next
-    session.setMetadata(
-      MediaMetadata.Builder()
-        .putString(MediaMetadata.METADATA_KEY_TITLE, next.title)
-        .putString(MediaMetadata.METADATA_KEY_ARTIST, next.subtitle)
-        .build(),
-    )
+    val metadata = MediaMetadata.Builder()
+      .putString(MediaMetadata.METADATA_KEY_TITLE, next.title)
+      .putString(MediaMetadata.METADATA_KEY_ARTIST, next.subtitle)
+      .putString(MediaMetadata.METADATA_KEY_ALBUM, getString(R.string.app_name))
+    if (next.durationMs > 0) metadata.putLong(MediaMetadata.METADATA_KEY_DURATION, next.durationMs)
+    artwork?.let {
+      metadata.putBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART, it)
+      metadata.putBitmap(MediaMetadata.METADATA_KEY_ART, it)
+    }
+    session.setMetadata(metadata.build())
     session.setPlaybackState(
       PlaybackState.Builder()
         .setActions(
@@ -167,8 +189,9 @@ class PlaybackService : Service() {
         )
         .setState(
           if (next.playing) PlaybackState.STATE_PLAYING else PlaybackState.STATE_PAUSED,
-          PlaybackState.PLAYBACK_POSITION_UNKNOWN,
-          1f,
+          if (next.durationMs > 0) next.positionMs else PlaybackState.PLAYBACK_POSITION_UNKNOWN,
+          if (next.playing) 1f else 0f,
+          SystemClock.elapsedRealtime(),
         )
         .build(),
     )
@@ -264,6 +287,12 @@ class PlaybackService : Service() {
     } else {
       @Suppress("DEPRECATION")
       Notification.Builder(this)
+    }
+    artwork?.let { builder.setLargeIcon(it) }
+    nowPlaying.accent?.let { accent ->
+      // The theme's accent: the icon's tint, and the whole card's color where Android still colors media notifications (before 12).
+      builder.setColor(accent)
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) builder.setColorized(true)
     }
     return builder
       .setSmallIcon(R.drawable.ic_notification)

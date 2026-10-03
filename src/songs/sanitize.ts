@@ -1,13 +1,16 @@
 import {
+  AMBIENCE_LAYERS,
   BASS_VOICES,
   CHORD_QUALITIES,
   DRUM_KITS,
   KEYS_VOICES,
   LEAD_VOICES,
   PAD_VOICES,
+  PERC_VOICES,
   STEPS,
   TRACKS,
   WAVEFORMS,
+  type AmbienceParams,
   type Chord,
   type EngineParams,
   type Pattern,
@@ -79,6 +82,7 @@ export function sanitizeParams(raw: unknown, d: EngineParams = DEFAULT_PARAMS): 
   const chords = progression(r.progression, d.progression);
   return {
     bpm,
+    transpose: Math.round(num(r.transpose, d.transpose, RANGES.transpose)),
     swing: num(r.swing, d.swing, RANGES.swing),
     humanize: num(r.humanize, d.humanize, RANGES.humanize),
     volume: num(r.volume, d.volume, RANGES.volume),
@@ -107,6 +111,8 @@ export function sanitizeParams(raw: unknown, d: EngineParams = DEFAULT_PARAMS): 
       kick: num(drums.kick, d.drums.kick, RANGES.level),
       snare: num(drums.snare, d.drums.snare, RANGES.level),
       hat: num(drums.hat, d.drums.hat, RANGES.level),
+      perc: num(drums.perc, d.drums.perc, RANGES.level),
+      percVoice: oneOf(drums.percVoice, PERC_VOICES, d.drums.percVoice),
     },
     pad: {
       level: num(pad.level, d.pad.level, RANGES.level),
@@ -124,12 +130,11 @@ export function sanitizeParams(raw: unknown, d: EngineParams = DEFAULT_PARAMS): 
       wobble: num(fx.wobble, d.fx.wobble, RANGES.amount),
       warmth: num(fx.warmth, d.fx.warmth, RANGES.amount),
       reverb: num(fx.reverb, d.fx.reverb, RANGES.amount),
+      crush: num(fx.crush, d.fx.crush, RANGES.amount),
+      pump: num(fx.pump, d.fx.pump, RANGES.amount),
     },
-    ambience: {
-      rain: num(amb.rain, d.ambience.rain, RANGES.level),
-      vinyl: num(amb.vinyl, d.ambience.vinyl, RANGES.level),
-      wind: num(amb.wind, d.ambience.wind, RANGES.level),
-    },
+    // Layers added after a song was saved are off in it (their default level is 0).
+    ambience: Object.fromEntries(AMBIENCE_LAYERS.map((id) => [id, num(amb[id], d.ambience[id], RANGES.level)])) as AmbienceParams,
   };
 }
 

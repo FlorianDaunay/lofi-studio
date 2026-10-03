@@ -1,6 +1,8 @@
 /** Min / max / step of every numeric control: shared by the sliders and the config sanitizer. */
 export const RANGES = {
   bpm: { min: 60, max: 100, step: 1 },
+  /** Semitones: up to a tritone either way reaches every key. */
+  transpose: { min: -6, max: 6, step: 1 },
   /** Loops per song (see `songs/playback.ts`). */
   loops: { min: 1, max: 32, step: 1 },
   swing: { min: 0, max: 1, step: 0.01 },

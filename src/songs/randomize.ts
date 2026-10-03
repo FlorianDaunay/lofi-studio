@@ -1,6 +1,19 @@
-import { BASS_VOICES, DRUM_KITS, KEYS_VOICES, LEAD_VOICES, PAD_VOICES, STEPS, type Chord, type EngineParams, type Pattern, type Waveform } from "@/audio/types";
+import {
+  BASS_VOICES,
+  DRUM_KITS,
+  KEYS_VOICES,
+  LEAD_VOICES,
+  PAD_VOICES,
+  PERC_VOICES,
+  STEPS,
+  type AmbienceLayerId,
+  type Chord,
+  type EngineParams,
+  type Pattern,
+  type Waveform,
+} from "@/audio/types";
 import { parseProgression } from "./chords";
-import { emptyPattern } from "./params";
+import { SILENT_AMBIENCE, emptyPattern } from "./params";
 
 /**
  * Musical randomness: every function draws from lists and ranges that sound good together, rather
@@ -64,18 +77,28 @@ export function randomPattern(rng: Rng = Math.random): Pattern {
 
   // A short motif: only heard when the melody instrument is turned up.
   maybe([0, 3, 6, 8, 10, 12, 14], 0.35, p.lead);
+
+  // Half the grooves get some hand percussion, mostly on the off-beats.
+  if (rng() < 0.5) maybe([2, 6, 10, 14, 3, 11], 0.5, p.perc);
   return p;
 }
 
 const SOFT_WAVES: readonly Waveform[] = ["sine", "triangle"];
 
+/** Layers that make a good bed for any song. */
+const BED_LAYERS: readonly AmbienceLayerId[] = ["rain", "vinyl", "wind", "waves", "stream", "fire", "city", "leaves"];
+/**
+ * Layers that can join a bed. Thunder, the clock and the train are too strong a statement to be
+ * drawn at random: they are left for a deliberate choice.
+ */
+const ACCENT_LAYERS: readonly AmbienceLayerId[] = [...BED_LAYERS, "birds", "crickets", "chimes", "frogs"];
+
 /** Timbre (voices included), effects and ambience within a soft, warm range. Levels and envelopes are left alone. */
 function randomSound(p: EngineParams, rng: Rng): EngineParams {
   // One or two ambience layers, at a moderate level.
-  const layers = ["rain", "vinyl", "wind"] as const;
-  const first = pickOne(rng, layers);
-  const second = rng() < 0.5 ? pickOne(rng, layers) : first;
-  const ambience = { rain: 0, vinyl: 0, wind: 0 };
+  const first = pickOne(rng, BED_LAYERS);
+  const second = rng() < 0.5 ? pickOne(rng, ACCENT_LAYERS) : first;
+  const ambience = { ...SILENT_AMBIENCE };
   ambience[first] = between(rng, 0.3, 0.6);
   ambience[second] = Math.max(ambience[second], between(rng, 0.15, 0.4));
 
@@ -90,10 +113,11 @@ function randomSound(p: EngineParams, rng: Rng): EngineParams {
       lfoDepth: between(rng, 0.2, 0.6),
     },
     bass: { ...p.bass, voice: pickOne(rng, BASS_VOICES) },
-    drums: { ...p.drums, kit: pickOne(rng, DRUM_KITS) },
+    drums: { ...p.drums, kit: pickOne(rng, DRUM_KITS), percVoice: pickOne(rng, PERC_VOICES) },
     pad: { ...p.pad, voice: pickOne(rng, PAD_VOICES) },
     lead: { ...p.lead, voice: pickOne(rng, LEAD_VOICES) },
     fx: {
+      ...p.fx,
       tone: integer(rng, 3500, 6000),
       wobble: between(rng, 0.15, 0.55),
       warmth: between(rng, 0.2, 0.5),

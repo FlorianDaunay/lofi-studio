@@ -1,6 +1,6 @@
 # Lofi Studio
 
-A modular Lo-Fi mini-studio for the desktop and Android. **Every sound is synthesized live** (jazzy keys, bass, drums, pads, melodies, rain, vinyl crackle, wind) with Tone.js and the Web Audio API. No samples, no audio files.
+A modular Lo-Fi mini-studio for the desktop (Windows, macOS) and Android. **Every sound is synthesized live** (jazzy keys, bass, drums and hand percussion, pads, melodies, and fifteen ambience layers from rain to a crackling fireplace) with Tone.js and the Web Audio API. No samples, no audio files.
 
 Tauri 2 (Rust) · React 19 · TypeScript · Zustand · Tone.js · Tailwind 3 + Radix.
 
@@ -8,10 +8,10 @@ Tauri 2 (Rust) · React 19 · TypeScript · Zustand · Tone.js · Tailwind 3 + R
 
 ## Features
 
-- **One-click moods.** 24 built-in songs (62–96 BPM), each with its own band, groove, chords and weather; a test makes sure no two sound alike. Four of them are pinned on the Studio page. Choose which four.
-- **Five instruments, each with its own voices.** Keys (electric piano, felt piano, organ, nylon guitar, vibraphone), bass (sub, upright, synth), drums (boom bap, brushes, deep 808), a pad that swells under the chords (warm, strings, air) and a melody on its own sequencer row (flute, music box, square) that always picks notes from the current chord.
-- **Procedural sound.** Keys through a low-pass + LFO wobble and chorus, a filter-enveloped bass, synthesized drums, and three ambience layers: rain (filtered pink noise + droplets), vinyl (random crackle and hiss), wind (slowly drifting brown noise).
-- **Two levels of control.** Minimal by default; expandable panels for the 16-step sequencer (tempo, swing, humanize), a **chord editor** (one chord per bar, up to eight bars, ready-made progressions), instruments (one tab each: voice, level, waveform, ADSR envelope, filter, LFO, pad fade-in, melody echo) and lo-fi effects (tape wobble, warmth, reverb, master low-pass).
+- **One-click moods.** 30 built-in songs (60–96 BPM), each with its own band, groove, chords and weather; a test makes sure no two sound alike. Four of them are pinned on the Studio page. Choose which four.
+- **A small band, each player with its own voices.** Keys (electric piano, felt piano, organ, nylon guitar, vibraphone, Wurlitzer, kalimba), bass (sub, upright, synth, fretless with glide), drums (boom bap, brushes, deep 808, dusty) plus hand percussion on its own sequencer row (shaker, rim, congas, claps), a pad that swells under the chords (warm, strings, air) and a melody on its own row (flute, music box, square, muted trumpet, whistle) that always picks notes from the current chord.
+- **Procedural sound.** Keys through a low-pass + LFO wobble and chorus, a filter-enveloped bass, synthesized drums, and fifteen ambience layers, picked from chips and mixed with one slider each: rain, wind, thunder, ocean waves, a stream, wind chimes (in tune with the chords, ringing more with the wind), birds, crickets, frogs, leaves, vinyl, a fireplace, a clock and a train (both on the beat), and a city at night. They are noise buffers and short synthesized events, and a layer holds no audio nodes until it is turned up.
+- **Two levels of control.** Minimal by default; expandable panels for the 16-step sequencer (tempo, swing, humanize), a **chord editor** (one chord per bar, up to eight bars, ready-made progressions), instruments (one tab each: voice, level, waveform, ADSR envelope, filter, LFO, pad fade-in, melody echo) and lo-fi effects (tape wobble, warmth, reverb, master low-pass, bit crush, sidechain pump). Transpose moves a whole song to another key.
 - **Randomize menu.** New groove, new chords, new sound or "Surprise me", each drawn from musically safe choices (curated jazzy progressions, soft ranges), never touching volume or levels. Up to five undos.
 - **Library.** Every song as a card with its length, tempo, loops and chords: *Play* starts it, *Open in Studio* edits it, and the ⋯ menu pins, adds to a playlist, copies, renames, exports or deletes. Save any sound as a song. In the Studio, *Save* updates your song (on a built-in song it makes your own copy, the original never changes) and *Save as…* makes a new one.
 - **Playlists.** Each song shows its length and the total adds them up. Six built-in playlists (Rainy Day, Deep Work, Late Night...) plus your own: group any songs, reorder them, play them from the Playlists page or the Studio. Built-in playlists can be copied to edit.
@@ -21,8 +21,9 @@ Tauri 2 (Rust) · React 19 · TypeScript · Zustand · Tone.js · Tailwind 3 + R
 - **Share.** Send songs *and playlists* as a `.lofi.json` file or as a short compressed code you can paste in a chat. Pick what to send from cover tiles; when receiving, drop a file or paste a code to see what is inside before adding it. Songs you already have are not duplicated.
 - **Plays in the background.** On Android the music goes on with the screen off or another app open, with a media notification (also on the lock screen and headset buttons) for previous / play-pause / next; it pauses for calls and when headphones are unplugged. On the desktop, closing the window while music plays hides it in the tray (next to the clock), whose menu plays, skips, reopens or quits. With nothing playing, the app keeps no background task: Android may reclaim it, and closing the desktop window quits.
 - **Mini player (desktop).** Shrink the window to a small always-on-top player (sidebar or tray menu): cover, title, previous / play / next, elapsed / total time with a progress line through the whole song, back to the full app, or hide to the tray.
-- **Media keys.** The keyboard's play / pause, next and previous keys and headphone buttons (wired or Bluetooth) control the app, even when it is not focused or hidden in the tray, and the Windows media flyout shows the song (Windows and Android; in a browser, only while the page has the focus).
-- **Stats.** A dashboard of how you use the app, for the last 7 days, 30 days, 90 days or 12 months: listening and studio time with their trend vs the previous period, songs started, your streak, an activity chart, top songs (pick one for its all-time numbers: plays, how often it is heard to the end, time spent editing it), when you listen (weekday × hour), where you play from, the average of your sound (a radar of swing, looseness, warmth, wobble, reverb, tone; tempo spread; favorite instruments; ambience) and your time in the studio. Only totals are stored, locally, in `config.json`.
+- **Sleep timer.** Next to shuffle and repeat: stop in 15 minutes to 1.5 hours, or at the end of the song, with a slow fade. It keeps time on the audio clock too, so it works in the background.
+- **Media keys.** The keyboard's play / pause, next and previous keys and headphone buttons (wired or Bluetooth) control the app, even when it is not focused or hidden in the tray, and the Windows media flyout and macOS Now Playing show the song (Windows, macOS and Android; in a browser, only while the page has the focus). On Android the notification and lock-screen player show the song's cover, a progress bar with its length, and the theme's accent.
+- **Stats.** A dashboard of how you use the app, for the last 7 days, 30 days, 90 days or 12 months: listening and studio time with their trend vs the previous period, songs started, your streak, an activity chart, top songs (pick one for its all-time numbers: plays, how often it is heard to the end, time spent editing it), when you listen (weekday × hour), where you play from, the average of your sound (a radar of swing, looseness, warmth, wobble, reverb, tone; tempo spread; favorite instruments; ambience) and your time in the studio. **Made for you** generates a new song from that profile (your favorite voices, tempo, texture and ambience), to play, reroll or save. Only totals are stored, locally, in `config.json`.
 - **Android.** A phone layout (bottom tab bar and player, touch-sized controls, back button support) and a GitHub Actions workflow that builds an installable APK.
 - **Interactive tutorial.** Fourteen short lessons in four levels, from the first loop to sharing songs. Every lesson embeds the real controls plus a live diagram (signal path, swing, piano keys of the current chord, filter wobble), and progress is remembered.
 - **59 themes** with live previews, searchable, light/dark, optional "match system".
@@ -94,6 +95,12 @@ npm run tauri android build -- --apk            # release, all ABIs
 npm run tauri android build -- --apk --debug --target aarch64
 ```
 
+## macOS
+
+[`.github/workflows/macos.yml`](.github/workflows/macos.yml) builds one universal app (Apple silicon and Intel) in a `.dmg`: push a `v*` tag and it is attached to the draft release, or run the workflow by hand and download it from the run's artifacts. It is the same app as on Windows: menu-bar icon and menu, mini player, playing on with the window closed (the Dock icon brings it back), media keys and Now Playing.
+
+Signing is optional: set `APPLE_CERTIFICATE` (base64 of a Developer ID Application `.p12`), `APPLE_CERTIFICATE_PASSWORD` and `APPLE_SIGNING_IDENTITY` to sign, plus `APPLE_ID`, `APPLE_PASSWORD` (app-specific) and `APPLE_TEAM_ID` to notarize. Without them the app is ad-hoc signed and macOS asks to confirm its first launch: System Settings > Privacy & Security > Open Anyway.
+
 ## Project layout
 
 | Path | Role |
@@ -104,8 +111,8 @@ npm run tauri android build -- --apk --debug --target aarch64
 | `src/learn/` | The tutorial curriculum (levels and lesson ids). The lesson bodies live in `src/components/learn/`. |
 | `src/pages/`, `src/components/` | Pages (Studio, Library, Playlists, Stats, Share, Learn) and their components; `ui/` holds the shadcn-style primitives on Radix. |
 | `src/themes/` | Design-token theme system: add a file in `definitions/` to add a theme. |
-| `src-tauri/` | Rust shell: locked-down window and CSP, atomic config persistence, native file dialogs (also on Android), the tray icon and mini player (desktop), Windows media keys (`smtc.rs`), now-playing relay (`media.rs`). `gen/android` is the generated Android project, kept in git with its signing hook, edge-to-edge insets and the background playback service (`PlaybackService.kt`, `MediaPlugin.kt`). |
-| `.github/workflows/` | CI (typecheck, tests, build, `cargo test`) and the Android APK build. |
+| `src-tauri/` | Rust shell: locked-down window and CSP, atomic config persistence, native file dialogs (also on Android), the tray icon and mini player (desktop), Windows and macOS media keys (`smtc.rs`, `now_playing_mac.rs`), now-playing relay (`media.rs`). `gen/android` is the generated Android project, kept in git with its signing hook, edge-to-edge insets and the background playback service (`PlaybackService.kt`, `MediaPlugin.kt`). |
+| `.github/workflows/` | CI (typecheck, tests, build, `cargo test`), the Android APK and the macOS app builds. |
 
 More detail for contributors is in [`CLAUDE.md`](CLAUDE.md).
 

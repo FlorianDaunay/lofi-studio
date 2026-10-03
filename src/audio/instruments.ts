@@ -1,6 +1,20 @@
 import * as Tone from "tone";
 import { lfoFloor } from "./music";
-import type { Adsr, BassParams, BassVoice, DrumKit, DrumsParams, KeysParams, KeysVoice, LeadParams, LeadVoice, PadParams, PadVoice, Waveform } from "./types";
+import type {
+  Adsr,
+  BassParams,
+  BassVoice,
+  DrumKit,
+  DrumsParams,
+  KeysParams,
+  KeysVoice,
+  LeadParams,
+  LeadVoice,
+  PadParams,
+  PadVoice,
+  PercVoice,
+  Waveform,
+} from "./types";
 
 /** Every instrument exposes one output node and cleans up after itself. */
 export interface Instrument {
@@ -115,6 +129,33 @@ const KEYS_VOICES: Record<KeysVoice, (lowPower: boolean) => Voice> = {
   // An organ holds its notes.
   organ: (lowPower) => partialsVoice([1, 0.7, 0.45, 0, 0.3, 0, 0, 0.15], (adsr) => ({ ...adsr, sustain: Math.max(adsr.sustain, 0.8) }), lowPower ? 12 : 16),
   guitar: (lowPower) => (lowPower ? pluckVoice(12) : guitarVoice()),
+  // A Wurlitzer: a reedier, more nasal electric piano than the Rhodes, with a bark when struck.
+  wurli: (lowPower) =>
+    fmVoice(
+      {
+        harmonicity: 1,
+        modulationIndex: 2.2,
+        modulation: { type: "square" },
+        modulationEnvelope: { attack: 0.002, decay: 0.35, sustain: 0.1, release: 0.5 },
+      },
+      lowPower ? 12 : 16,
+    ),
+  // A kalimba: a short, woody thumb-piano ping with an inharmonic overtone, whatever the ADSR.
+  kalimba: (lowPower) => {
+    const voice = fmVoice(
+      {
+        harmonicity: 5.4,
+        modulationIndex: 1.6,
+        modulation: { type: "sine" },
+        modulationEnvelope: { attack: 0.001, decay: 0.12, sustain: 0, release: 0.1 },
+      },
+      lowPower ? 12 : 16,
+    );
+    return {
+      ...voice,
+      shape: (adsr) => voice.shape({ attack: 0.002, decay: Math.min(Math.max(adsr.decay, 0.4), 1.6), sustain: 0, release: 0.5 }, "sine"),
+    };
+  },
 };
 
 /** Jazzy chords with a choice of voice, through a low-pass with an LFO "wobble" and a chorus. */
@@ -184,8 +225,19 @@ function bassSettings(voice: BassVoice, { wave, adsr, cutoff }: BassParams): Mon
         filter: { Q: 5 },
         filterEnvelope: { attack: 0.01, decay: 0.3, sustain: 0.2, release: 0.3, baseFrequency: cutoff * 0.5, octaves: 2.5 },
       };
+    case "fretless":
+      // A singing, rounded tone that slides into each note.
+      return {
+        oscillator: { type: "custom", partials: [1, 0.4, 0.12, 0.05] },
+        envelope: { ...adsr, attack: Math.max(adsr.attack, 0.02), sustain: Math.max(adsr.sustain, 0.5) },
+        filter: { Q: 1.5 },
+        filterEnvelope: { attack: 0.04, decay: 0.4, sustain: 0.6, release: 0.3, baseFrequency: cutoff * 0.8, octaves: 1.2 },
+      };
   }
 }
+
+/** Seconds the bass slides between notes: only the fretless glides. */
+const BASS_GLIDE: Record<BassVoice, number> = { sub: 0, upright: 0, synth: 0, fretless: 0.06 };
 
 /** Bass on a mono synth with a filter envelope: a round sub, a plucked upright or a squelchy synth. */
 export class Bass implements Instrument {
@@ -198,7 +250,7 @@ export class Bass implements Instrument {
 
   apply(params: BassParams) {
     this.output.gain.rampTo(params.level, 0.05);
-    this.synth.set(bassSettings(params.voice, params));
+    this.synth.set({ ...bassSettings(params.voice, params), portamento: BASS_GLIDE[params.voice] });
   }
 
   play(frequency: number, seconds: number, time: number, velocity: number) {
@@ -235,6 +287,12 @@ const KITS: Record<DrumKit, KitSettings> = {
     snare: { noise: "white", decay: 0.11, frequency: 2800, q: 1, body: 0.8, bodyNote: 220 },
     hat: { decay: 0.03, frequency: 9000, gain: 0.3 },
   },
+  // Like a worn-out sampler: a short, boxy kick, a dull snare, a dark hat.
+  dusty: {
+    kick: { note: 52, pitchDecay: 0.025, octaves: 3.5, decay: 0.18 },
+    snare: { noise: "pink", decay: 0.2, frequency: 1000, q: 1.2, body: 0.9, bodyNote: 160 },
+    hat: { decay: 0.06, frequency: 4200, gain: 0.22 },
+  },
 };
 
 /** Kick, snare and hat, all synthesized (pitch-swept sine, filtered noise), in one of a few kits. */
@@ -250,15 +308,18 @@ export class Drums implements Instrument {
   });
   private readonly hat = new Tone.NoiseSynth({ noise: { type: "white" }, envelope: { attack: 0.001, sustain: 0, release: 0.01 } });
   private readonly hatFilter = new Tone.Filter({ type: "highpass", Q: 0.5 });
+  private readonly perc = new Percussion();
 
   constructor() {
     this.kick.connect(this.output);
     this.snareNoise.chain(this.snareFilter, this.output);
     this.snareBody.connect(this.output);
     this.hat.chain(this.hatFilter, this.output);
+    this.perc.output.connect(this.output);
   }
 
-  apply({ kit, kick, snare, hat }: DrumsParams) {
+  apply({ kit, kick, snare, hat, perc, percVoice }: DrumsParams) {
+    this.perc.apply(percVoice, perc);
     const k = KITS[kit];
     this.kit = k;
     this.kick.set({ pitchDecay: k.kick.pitchDecay, octaves: k.kick.octaves, envelope: { decay: k.kick.decay } });
@@ -286,9 +347,75 @@ export class Drums implements Instrument {
     this.hat.triggerAttackRelease(this.kit.hat.decay * 0.9, time, velocity);
   }
 
+  playPerc(time: number, velocity: number, step: number) {
+    this.perc.play(time, velocity, step);
+  }
+
   dispose() {
+    this.perc.dispose();
     const nodes = [this.kick, this.snareNoise, this.snareFilter, this.snareBody, this.hat, this.hatFilter, this.output];
     for (const node of nodes) node.dispose();
+  }
+}
+
+/** How each percussion voice shapes the shared noise, and how loud it sits. */
+const PERC_SETTINGS: Record<PercVoice, { filter: BiquadFilterType; frequency: number; q: number; decay: number; gain: number }> = {
+  shaker: { filter: "highpass", frequency: 6000, q: 0.7, decay: 0.05, gain: 0.35 },
+  rim: { filter: "bandpass", frequency: 1800, q: 3, decay: 0.025, gain: 0.6 },
+  conga: { filter: "lowpass", frequency: 900, q: 0.5, decay: 0.03, gain: 0.25 },
+  clap: { filter: "bandpass", frequency: 1200, q: 1.1, decay: 0.09, gain: 0.55 },
+};
+
+/** Hand percussion on its own row: a shaker, a rim click, congas or claps, all from noise and a drum tone. */
+class Percussion {
+  readonly output = new Tone.Gain(0.6);
+  private voice: PercVoice = "shaker";
+  private readonly noise = new Tone.NoiseSynth({ noise: { type: "white" }, envelope: { attack: 0.003, sustain: 0, release: 0.02 } });
+  private readonly filter = new Tone.Filter({ type: "highpass" });
+  private readonly drum = new Tone.MembraneSynth({
+    pitchDecay: 0.015,
+    octaves: 1.5,
+    envelope: { attack: 0.001, decay: 0.22, sustain: 0, release: 0.05 },
+  });
+
+  constructor() {
+    this.noise.chain(this.filter, this.output);
+    this.drum.connect(this.output);
+  }
+
+  apply(voice: PercVoice, level: number) {
+    const settings = PERC_SETTINGS[voice];
+    this.voice = voice;
+    this.filter.set({ type: settings.filter, frequency: settings.frequency, Q: settings.q });
+    this.noise.set({ envelope: { decay: settings.decay } });
+    this.noise.volume.value = db(level * settings.gain);
+    this.drum.volume.value = db(level * 0.7);
+  }
+
+  play(time: number, velocity: number, step: number) {
+    switch (this.voice) {
+      case "shaker":
+        // Pushed on the off-beats, the way a shaker is played.
+        this.noise.triggerAttackRelease(0.04, time, velocity * (step % 2 === 1 ? 1 : 0.6));
+        break;
+      case "rim":
+        this.noise.triggerAttackRelease(0.02, time, velocity);
+        this.drum.triggerAttackRelease(420, 0.04, time, velocity * 0.5);
+        break;
+      case "conga":
+        // A low and a high drum: the low one on the beat.
+        this.drum.triggerAttackRelease(step % 4 === 0 ? 196 : 262, 0.2, time, velocity);
+        this.noise.triggerAttackRelease(0.02, time, velocity * 0.4);
+        break;
+      case "clap":
+        // A clap is a few hands, milliseconds apart.
+        [0, 0.011, 0.023].forEach((offset, i) => this.noise.triggerAttackRelease(i === 2 ? 0.08 : 0.01, time + offset, velocity));
+        break;
+    }
+  }
+
+  dispose() {
+    for (const node of [this.noise, this.filter, this.drum, this.output]) node.dispose();
   }
 }
 
@@ -367,6 +494,18 @@ const LEAD_VOICES: Record<LeadVoice, { voice: () => Voice; vibrato: number; cuto
     voice: () => partialsVoice([1, 0, 0.33, 0, 0.2, 0, 0.14], () => ({ attack: 0.01, decay: 0.2, sustain: 0.4, release: 0.25 }), 4),
     vibrato: 0.05,
     cutoff: 2200,
+  },
+  // A muted jazz trumpet: brassy partials behind a dark filter, with a soft swell.
+  trumpet: {
+    voice: () => partialsVoice([1, 0.8, 0.6, 0.45, 0.3, 0.2, 0.12, 0.08], () => ({ attack: 0.05, decay: 0.25, sustain: 0.6, release: 0.2 }), 4),
+    vibrato: 0.08,
+    cutoff: 1500,
+  },
+  // Someone whistling: an almost pure tone with a wide, slow vibrato.
+  whistle: {
+    voice: () => partialsVoice([1, 0.02], () => ({ attack: 0.04, decay: 0.15, sustain: 0.75, release: 0.15 }), 4),
+    vibrato: 0.25,
+    cutoff: 6000,
   },
 };
 

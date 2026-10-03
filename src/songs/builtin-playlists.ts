@@ -6,7 +6,7 @@ const definitions: [id: string, name: string, description: string, songIds: stri
     "rainy-day",
     "Rainy Day",
     "Stay in, listen to the rain on the window.",
-    ["rainy-study", "cozy-blanket", "paper-lanterns", "neon-rain", "coffee-steam", "night-shift", "train-window"],
+    ["rainy-study", "cozy-blanket", "paper-lanterns", "neon-rain", "storm-diner", "coffee-steam", "night-shift", "train-window"],
   ],
   [
     "deep-work",
@@ -18,7 +18,7 @@ const definitions: [id: string, name: string, description: string, songIds: stri
     "late-night",
     "Late Night",
     "Jazz chords, crackle and city lights after midnight.",
-    ["midnight-jazz", "late-bus-home", "night-shift", "subway-echoes", "neon-rain", "stargazing"],
+    ["midnight-jazz", "late-bus-home", "night-train", "night-shift", "subway-echoes", "neon-rain", "storm-diner", "stargazing"],
   ],
   [
     "wind-down",
@@ -37,6 +37,12 @@ const definitions: [id: string, name: string, description: string, songIds: stri
     "Upbeat",
     "The fastest, busiest grooves in the box.",
     ["arcade-nights", "tape-cafe", "coffee-steam", "subway-echoes", "rooftop-garden", "vinyl-sunday"],
+  ],
+  [
+    "into-the-wild",
+    "Into the Wild",
+    "Streams, waves, birds and a campfire: lo-fi outdoors.",
+    ["forest-creek", "harbor-lights", "campfire-stars", "pond-at-dusk", "sunday-wind", "low-tide"],
   ],
 ];
 

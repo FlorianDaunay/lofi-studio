@@ -17,6 +17,13 @@ export interface NowPlaying {
   title: string;
   subtitle: string;
   playing: boolean;
+  /** Length of the song and how far into it the player is, in seconds: the progress bar. */
+  duration: number;
+  position: number;
+  /** The theme's accent, `0xRRGGBB`: tints the Android notification. */
+  accent: number;
+  /** The cover as a base64 PNG (no `data:` prefix), sent only when it changed: omitted means "unchanged". */
+  artwork?: string;
 }
 
 const isMediaAction = (value: unknown): value is MediaAction => MEDIA_ACTIONS.includes(value as MediaAction);

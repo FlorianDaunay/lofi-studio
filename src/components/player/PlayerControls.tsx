@@ -7,6 +7,7 @@ import { BUILT_IN_PLAYLISTS } from "@/songs/builtin-playlists";
 import { findPlaylist, useLibrary } from "@/state/library";
 import { playNext, playPrevious, setRepeat, setShuffle, setSource } from "@/state/playback";
 import { usePlayer } from "@/state/player";
+import { SleepTimerMenu } from "./SleepTimerMenu";
 
 const REPEAT_LABELS: Record<RepeatMode, string> = {
   off: "Repeat off: stop after the last song",
@@ -16,7 +17,7 @@ const REPEAT_LABELS: Record<RepeatMode, string> = {
 
 const sourceValue = (source: PlaySource) => (source.kind === "playlist" ? `playlist:${source.id}` : "library");
 
-/** Where songs come from, plus previous / next, shuffle and repeat. Play / stop stays with the caller. */
+/** Where songs come from, plus previous / next, shuffle, repeat and the sleep timer. Play / stop stays with the caller. */
 export function PlayerControls({ className }: { className?: string }) {
   const source = usePlayer((s) => s.source);
   const shuffle = usePlayer((s) => s.shuffle);
@@ -58,6 +59,7 @@ export function PlayerControls({ className }: { className?: string }) {
       >
         <RepeatIcon className="h-4 w-4" aria-hidden />
       </Button>
+      <SleepTimerMenu />
       <Select
         label="Play from"
         value={value}

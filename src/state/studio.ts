@@ -6,7 +6,7 @@ import type { Song, SongParams } from "@/songs/types";
 import { DEFAULT_PANELS, type PanelId } from "./config";
 
 type Section = "keys" | "bass" | "drums" | "pad" | "lead" | "fx" | "ambience";
-type Global = Pick<EngineParams, "bpm" | "swing" | "humanize" | "volume" | "loops">;
+type Global = Pick<EngineParams, "bpm" | "transpose" | "swing" | "humanize" | "volume" | "loops">;
 
 /** What is saved of the studio between sessions. */
 export interface StudioSnapshot {
@@ -40,6 +40,8 @@ interface StudioState extends StudioSnapshot {
 
   /** Makes a song the current sound. The listener's volume is kept. */
   loadSong: (song: Song) => void;
+  /** Makes a sound that is not in the library the current one (unsaved); Undo brings the previous sound back. */
+  loadSound: (params: SongParams) => void;
   /** Tells the studio the current sound is now stored as `songId` (after a save). */
   markSaved: (songId: string) => void;
   /** Randomizes part of the sound (see `RandomizeKind`); the previous sound can be restored. */
@@ -77,6 +79,13 @@ export const useStudio = create<StudioState>()((set) => {
     history: [],
 
     loadSong: (song) => set((s) => ({ params: { ...song.params, volume: s.params.volume }, songId: song.id, dirty: false, history: [] })),
+    loadSound: (params) =>
+      set((s) => ({
+        params: { ...params, volume: s.params.volume },
+        songId: null,
+        dirty: true,
+        history: [...s.history, { params: s.params, dirty: s.dirty }].slice(-MAX_HISTORY),
+      })),
     markSaved: (songId) => set({ songId, dirty: false }),
 
     randomize: (kind) =>

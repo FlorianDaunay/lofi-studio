@@ -6,11 +6,12 @@ import {
   type PlaySource,
   type RepeatMode,
 } from "@/songs/playback";
-import type { Song } from "@/songs/types";
+import type { Song, SongParams } from "@/songs/types";
 import { recordSongEnd } from "./activity";
 import { engine, togglePlay } from "./bridge";
 import { allSongs, findPlaylist, findSong, useLibrary } from "./library";
 import { usePlayer } from "./player";
+import { sleepAtSongEnd } from "./sleep";
 import { useStudio } from "./studio";
 
 /**
@@ -82,6 +83,17 @@ export function playPrevious() {
   if (song) switchTo(song);
 }
 
+/**
+ * Plays a sound that is not in the library (a "Made for you" song). It is unsaved, so it loops
+ * until it is saved or another song is chosen; the sound it replaced comes back with Undo.
+ */
+export async function playUnsaved(params: SongParams) {
+  recordSongEnd(false);
+  useStudio.getState().loadSound(params);
+  engine.restartLoop();
+  if (!useStudio.getState().playing) await togglePlay();
+}
+
 export function setShuffle(shuffle: boolean) {
   usePlayer.getState().set({ shuffle });
   // The song that is playing stays first, the rest is drawn.
@@ -114,10 +126,11 @@ export async function playSource(source: PlaySource, startWith?: string) {
  * Returns a cleanup function, like `startBridge`.
  */
 export function startPlayback(): () => void {
-  engine.onLoopEnd((loops) => {
+  return engine.addLoopEndListener((loops) => {
     const state = useStudio.getState();
-    if (loops < state.params.loops || state.dirty || state.songId === null) return;
+    if (loops < state.params.loops) return;
+    // "Sleep at the end of the song" also ends a sound that is not saved.
+    if (sleepAtSongEnd() || state.dirty || state.songId === null) return;
     advance(true);
   });
-  return () => engine.onLoopEnd(undefined);
 }

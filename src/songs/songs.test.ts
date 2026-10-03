@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { BUILT_IN_SONGS } from "./builtin";
-import { DEFAULT_PARAMS } from "./params";
+import { DEFAULT_PARAMS, SILENT_AMBIENCE } from "./params";
 import { DEFAULT_PINNED, fillPinned } from "./pinned";
 import { sanitizeDraft, sanitizeParams } from "./sanitize";
 import { autoLoops } from "./playback";
@@ -8,7 +8,7 @@ import { parseShare, shareFileName, toShareCode, toShareDocument, toShareFile, t
 import { MAX_BARS, parseChord, parseProgression, withBarAdded, withBarRemoved, withChord } from "./chords";
 import { RANDOMIZE_KINDS, randomize } from "./randomize";
 import { PINNED_SLOTS, type Song, type SongParams } from "./types";
-import { BASS_VOICES, DRUM_KITS, KEYS_VOICES, LEAD_VOICES, PAD_VOICES } from "@/audio/types";
+import { AMBIENCE_LAYERS, BASS_VOICES, DRUM_KITS, KEYS_VOICES, LEAD_VOICES, PAD_VOICES, PERC_VOICES } from "@/audio/types";
 
 const song = BUILT_IN_SONGS[0]!;
 
@@ -40,6 +40,30 @@ describe("sanitizeParams", () => {
     expect(sanitizeParams({ ...DEFAULT_PARAMS, loops: 7.6 }).loops).toBe(8);
     expect(sanitizeParams({ ...DEFAULT_PARAMS, loops: 500 }).loops).toBe(32);
     expect(sanitizeParams({ ...DEFAULT_PARAMS, loops: -2 }).loops).toBe(1);
+  });
+
+  it("reads songs saved by 0.7 as they were: every newer setting off", () => {
+    // A song as 0.7 wrote it: no transpose, percussion, crush, pump, or ambience besides rain, vinyl and wind.
+    const saved = {
+      ...DEFAULT_PARAMS,
+      transpose: undefined,
+      pattern: { ...DEFAULT_PARAMS.pattern, perc: undefined },
+      drums: { kit: "brushes", kick: 0.6, snare: 0.5, hat: 0.4 },
+      fx: { tone: 4000, wobble: 0.5, warmth: 0.4, reverb: 0.3 },
+      ambience: { rain: 0.6, vinyl: 0.2, wind: 0.1 },
+    };
+    const read = sanitizeParams(JSON.parse(JSON.stringify(saved)));
+    expect(read.transpose).toBe(0);
+    expect(read.pattern.perc.some(Boolean)).toBe(false);
+    expect(read.drums).toMatchObject(saved.drums);
+    expect(read.fx).toEqual({ ...saved.fx, crush: 0, pump: 0 });
+    expect(read.ambience).toEqual({ ...SILENT_AMBIENCE, ...saved.ambience });
+    expect({ ...read, transpose: undefined, pattern: { ...read.pattern, perc: undefined }, drums: undefined, fx: undefined, ambience: undefined }).toEqual({
+      ...saved,
+      drums: undefined,
+      fx: undefined,
+      ambience: undefined,
+    });
   });
 
   it("survives non-object input", () => {
@@ -188,7 +212,7 @@ describe("randomize", () => {
       expect(result.volume).toBe(DEFAULT_PARAMS.volume);
       expect(result.keys.level).toBe(DEFAULT_PARAMS.keys.level);
       expect(result.bass.level).toBe(DEFAULT_PARAMS.bass.level);
-      expect({ ...result.drums, kit: undefined }).toEqual({ ...DEFAULT_PARAMS.drums, kit: undefined });
+      expect({ ...result.drums, kit: undefined, percVoice: undefined }).toEqual({ ...DEFAULT_PARAMS.drums, kit: undefined, percVoice: undefined });
       expect(result.pad.level).toBe(DEFAULT_PARAMS.pad.level);
       expect(result.lead.level).toBe(DEFAULT_PARAMS.lead.level);
       expect(result.bpm).toBeGreaterThanOrEqual(72);
@@ -213,10 +237,10 @@ describe("randomize", () => {
 });
 
 describe("built-in library", () => {
-  it("has two dozen songs with unique ids and names", () => {
-    expect(BUILT_IN_SONGS).toHaveLength(24);
-    expect(new Set(BUILT_IN_SONGS.map((s) => s.id)).size).toBe(24);
-    expect(new Set(BUILT_IN_SONGS.map((s) => s.name)).size).toBe(24);
+  it("has thirty songs with unique ids and names", () => {
+    expect(BUILT_IN_SONGS).toHaveLength(30);
+    expect(new Set(BUILT_IN_SONGS.map((s) => s.id)).size).toBe(30);
+    expect(new Set(BUILT_IN_SONGS.map((s) => s.name)).size).toBe(30);
   });
 
   it("only contains valid, lo-fi-paced songs", () => {
@@ -235,6 +259,7 @@ describe("built-in library", () => {
     expect(used((p) => p.drums.kit)).toEqual(new Set(DRUM_KITS));
     expect(used((p) => (p.pad.level > 0 ? p.pad.voice : "off"))).toEqual(new Set([...PAD_VOICES, "off"]));
     expect(used((p) => (p.lead.level > 0 ? p.lead.voice : "off"))).toEqual(new Set([...LEAD_VOICES, "off"]));
+    expect(used((p) => (p.pattern.perc.some(Boolean) && p.drums.perc > 0 ? p.drums.percVoice : "off"))).toEqual(new Set([...PERC_VOICES, "off"]));
   });
 
   it("makes every pair of songs audibly different", () => {
@@ -249,7 +274,7 @@ describe("built-in library", () => {
       p.progression.map((c) => `${c.pc}${c.quality}`).join(),
       p.drums.kick + p.drums.snare < 0.2 ? "no beat" : "beat",
       p.swing < 0.4 ? "straight" : p.swing < 0.6 ? "swung" : "shuffled",
-      (["rain", "vinyl", "wind"] as const).reduce((a, b) => (p.ambience[b] > p.ambience[a] ? b : a)),
+      AMBIENCE_LAYERS.reduce((a, b) => (p.ambience[b] > p.ambience[a] ? b : a)),
     ];
     const tooClose: string[] = [];
     for (let i = 0; i < BUILT_IN_SONGS.length; i++) {

@@ -1,5 +1,5 @@
 import { parseProgression } from "./chords";
-import { DEFAULT_PARAMS, steps } from "./params";
+import { DEFAULT_PARAMS, SILENT_AMBIENCE, steps } from "./params";
 import { autoLoops } from "./playback";
 import type { Song, SongParams } from "./types";
 
@@ -11,7 +11,7 @@ import type { Song, SongParams } from "./types";
  */
 const { volume: _volume, ...base } = DEFAULT_PARAMS;
 
-type Row = "kick" | "snare" | "hat" | "bass" | "keys" | "lead";
+type Row = "kick" | "snare" | "hat" | "perc" | "bass" | "keys" | "lead";
 
 interface Definition {
   id: string;
@@ -23,14 +23,17 @@ interface Definition {
   chords: string;
   /** 16 steps per track, `x` = hit. A missing row is silent. */
   pattern: Partial<Record<Row, string>>;
-  ambience: SongParams["ambience"];
-  fx: SongParams["fx"];
+  /** Only the layers the song uses; the others are off. */
+  ambience: Partial<SongParams["ambience"]>;
+  /** Crush and pump are off unless given. */
+  fx: Omit<SongParams["fx"], "crush" | "pump"> & Partial<Pick<SongParams["fx"], "crush" | "pump">>;
   keys?: Partial<SongParams["keys"]>;
   bass?: Partial<SongParams["bass"]>;
   drums?: Partial<SongParams["drums"]>;
   pad?: Partial<SongParams["pad"]>;
   lead?: Partial<SongParams["lead"]>;
   humanize?: number;
+  transpose?: number;
 }
 
 const REST = "................";
@@ -47,18 +50,19 @@ function build(d: Definition): Song {
     params: {
       ...base,
       bpm: d.bpm,
+      transpose: d.transpose ?? base.transpose,
       swing: d.swing,
       humanize: d.humanize ?? base.humanize,
       loops: autoLoops({ bpm: d.bpm, progression }),
       progression,
-      pattern: { kick: row("kick"), snare: row("snare"), hat: row("hat"), bass: row("bass"), keys: row("keys"), lead: row("lead") },
+      pattern: { kick: row("kick"), snare: row("snare"), hat: row("hat"), perc: row("perc"), bass: row("bass"), keys: row("keys"), lead: row("lead") },
       keys: { ...base.keys, ...d.keys },
       bass: { ...base.bass, ...d.bass },
       drums: { ...base.drums, ...d.drums },
       pad: { ...base.pad, ...d.pad },
       lead: { ...base.lead, ...d.lead },
-      ambience: d.ambience,
-      fx: d.fx,
+      ambience: { ...SILENT_AMBIENCE, ...d.ambience },
+      fx: { ...base.fx, ...d.fx },
     },
   };
 }
@@ -494,6 +498,148 @@ const definitions: Definition[] = [
     bass: { voice: "upright", level: 0.55 },
     drums: { kick: 0, snare: 0, hat: 0.3 },
     pad: { level: 0.4, voice: "strings", attack: 2.5, cutoff: 1400 },
+  },
+  {
+    id: "harbor-lights",
+    name: "Harbor Lights",
+    description: "Kalimba and a sliding fretless bass, waves on the quay, a whistle in the distance.",
+    bpm: 72,
+    swing: 0.3,
+    chords: "Fmaj7 Em7 Dm9 Cmaj7",
+    pattern: {
+      kick: "x.......x.......",
+      snare: "....x.......x...",
+      hat: "x...x...x...x...",
+      perc: "..x...x...x...x.",
+      bass: "x.....x.x.......",
+      keys: "x..x..x...x..x..",
+      lead: "x.......x.......",
+    },
+    ambience: { waves: 0.55, chimes: 0.15, vinyl: 0.15 },
+    fx: { tone: 5600, wobble: 0.2, warmth: 0.25, reverb: 0.4 },
+    keys: { voice: "kalimba", level: 0.6, adsr: { attack: 0.002, decay: 1.2, sustain: 0, release: 0.5 } },
+    bass: { voice: "fretless", level: 0.65, cutoff: 600 },
+    drums: { kit: "brushes", kick: 0.55, snare: 0.4, hat: 0.4, perc: 0.5, percVoice: "shaker" },
+    pad: { level: 0.25, voice: "air", attack: 2 },
+    lead: { level: 0.3, voice: "whistle", echo: 0.4 },
+  },
+  {
+    id: "night-train",
+    name: "Night Train",
+    description: "A Wurlitzer, a muted trumpet and a dusty beat, with the rails clacking along.",
+    bpm: 84,
+    swing: 0.66,
+    chords: "Am9 D9 Gmaj7 E7",
+    pattern: {
+      kick: "x......x..x.....",
+      snare: "....x.......x...",
+      hat: "x.x.x.x.x.x.x.x.",
+      perc: "......x.......x.",
+      bass: "x..x......x.....",
+      keys: "x......x...x....",
+      lead: "....x.......x.x.",
+    },
+    ambience: { train: 0.5, vinyl: 0.25 },
+    fx: { tone: 4200, wobble: 0.35, warmth: 0.45, reverb: 0.22, crush: 0.2 },
+    keys: { voice: "wurli", wave: "sine", level: 0.5, cutoff: 2800 },
+    bass: { voice: "sub", level: 0.7 },
+    drums: { kit: "dusty", kick: 0.9, snare: 0.7, hat: 0.55, perc: 0.6, percVoice: "rim" },
+    lead: { level: 0.3, voice: "trumpet", echo: 0.3 },
+  },
+  {
+    id: "campfire-stars",
+    name: "Campfire Stars",
+    description: "Guitar by a crackling fire, congas, crickets and someone whistling.",
+    bpm: 66,
+    swing: 0.5,
+    chords: "Gmaj7 Em9 Cmaj7 D13",
+    pattern: {
+      kick: "x.........x.....",
+      snare: "........x.......",
+      hat: "x...x...x...x...",
+      perc: "x..x..x...x.x...",
+      bass: "x.........x.....",
+      keys: "x.x..x.x..x..x..",
+      lead: "......x.......x.",
+    },
+    ambience: { fire: 0.5, crickets: 0.3 },
+    fx: { tone: 5000, wobble: 0.15, warmth: 0.35, reverb: 0.3 },
+    keys: { voice: "guitar", level: 0.6, adsr: { attack: 0.01, decay: 1.6, sustain: 0.2, release: 1 }, cutoff: 3800, lfoDepth: 0.1 },
+    bass: { voice: "upright", level: 0.6 },
+    drums: { kit: "dusty", kick: 0.5, snare: 0.35, hat: 0.3, perc: 0.7, percVoice: "conga" },
+    pad: { level: 0.25, voice: "warm", attack: 1.6 },
+    lead: { level: 0.3, voice: "whistle", echo: 0.25 },
+  },
+  {
+    id: "storm-diner",
+    name: "Storm Diner",
+    description: "Wurlitzer and trumpet in a late diner, thunder rolling over the rain outside.",
+    bpm: 78,
+    swing: 0.55,
+    chords: "Cm9 F9 Bbmaj7 G7",
+    pattern: {
+      kick: "x......x.x......",
+      snare: "....x.......x...",
+      hat: "x.xxx.x.x.xxx.x.",
+      perc: "....x.......x...",
+      bass: "x..x...x.x......",
+      keys: "x.....x...x.....",
+      lead: "..x.......x.....",
+    },
+    ambience: { rain: 0.45, thunder: 0.4, city: 0.15, clock: 0.12 },
+    fx: { tone: 4400, wobble: 0.3, warmth: 0.4, reverb: 0.26, pump: 0.3 },
+    keys: { voice: "wurli", wave: "triangle", level: 0.5, cutoff: 2600, lfoRate: 0.4, lfoDepth: 0.4 },
+    bass: { voice: "synth", wave: "triangle", cutoff: 420 },
+    drums: { kit: "boombap", kick: 0.9, snare: 0.6, hat: 0.55, perc: 0.45, percVoice: "clap" },
+    pad: { level: 0.25, voice: "strings", attack: 1.5, cutoff: 1500 },
+    lead: { level: 0.25, voice: "trumpet", echo: 0.35 },
+  },
+  {
+    id: "forest-creek",
+    name: "Forest Creek",
+    description: "A kalimba by a stream, birdsong and leaves in the wind.",
+    bpm: 62,
+    swing: 0.25,
+    chords: "Dmaj7 Bm9 Em9 A13",
+    pattern: {
+      kick: "x.......x.......",
+      snare: "........x.......",
+      hat: "..x...x...x...x.",
+      perc: ".x.x.x.x.x.x.x.x",
+      bass: "x.......x.......",
+      keys: "x.x...x.x...x...",
+      lead: "x...........x...",
+    },
+    ambience: { stream: 0.5, birds: 0.35, leaves: 0.2 },
+    fx: { tone: 7000, wobble: 0.1, warmth: 0.15, reverb: 0.35 },
+    keys: { voice: "kalimba", level: 0.55, adsr: { attack: 0.002, decay: 0.9, sustain: 0, release: 0.5 } },
+    bass: { voice: "sub", level: 0.55 },
+    drums: { kit: "dusty", kick: 0.45, snare: 0.3, hat: 0.3, perc: 0.35, percVoice: "shaker" },
+    lead: { level: 0.3, voice: "flute", echo: 0.3 },
+  },
+  {
+    id: "pond-at-dusk",
+    name: "Pond at Dusk",
+    description: "Vibes, a sliding bass and a music box, frogs and crickets as night falls.",
+    bpm: 70,
+    swing: 0.48,
+    chords: "Ebm9 Ab13 Dbmaj7 Bbm7",
+    pattern: {
+      kick: "x.......x..x....",
+      snare: "....x.......x...",
+      hat: "x.x.x.x.x.x.x.x.",
+      perc: "...x.......x....",
+      bass: "x......x........",
+      keys: "x.......x.......",
+      lead: "x..x..x...x.....",
+    },
+    ambience: { frogs: 0.4, crickets: 0.3 },
+    fx: { tone: 3600, wobble: 0.25, warmth: 0.3, reverb: 0.38 },
+    keys: { voice: "vibes", wave: "sine", level: 0.5, cutoff: 3000 },
+    bass: { voice: "fretless", level: 0.6, cutoff: 500 },
+    drums: { kit: "deep", kick: 0.7, snare: 0.5, hat: 0.4, perc: 0.5, percVoice: "rim" },
+    pad: { level: 0.3, voice: "air", attack: 2.5 },
+    lead: { level: 0.3, voice: "musicbox", echo: 0.4 },
   },
 ];
 

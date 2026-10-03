@@ -58,3 +58,9 @@ export const chordMidiNotes = (chord: Chord): { keys: number[]; bass: number } =
 
 /** Lowest cutoff of the keys' wobble: the LFO sweeps between this and `cutoff` (up to 3.5 octaves down). */
 export const lfoFloor = (cutoff: number, depth: number) => Math.max(90, cutoff * 2 ** (-3.5 * depth));
+
+/** MIDI notes for wind chimes: the chord's tones, once each, in the bell register (C6..B6). */
+export function chimeMidi(chord: Chord): number[] {
+  const pcs = new Set([0, ...VOICINGS[chord.quality]].map((interval) => (chord.pc + interval) % 12));
+  return [...pcs].sort((a, b) => a - b).map((pc) => 84 + pc);
+}

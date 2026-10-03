@@ -1,6 +1,8 @@
 mod config;
 mod files;
 mod media;
+#[cfg(target_os = "macos")]
+mod now_playing_mac;
 #[cfg(windows)]
 mod smtc;
 #[cfg(desktop)]
@@ -55,6 +57,8 @@ pub fn run() {
             let _window = builder.build()?;
             #[cfg(windows)]
             smtc::attach(&_window);
+            #[cfg(target_os = "macos")]
+            now_playing_mac::attach(app.handle());
             Ok(())
         });
     #[cfg(desktop)]
@@ -64,7 +68,12 @@ pub fn run() {
         }
     });
 
-    builder
-        .run(tauri::generate_context!())
-        .expect("error while running Lofi Studio");
+    let app = builder.build(tauri::generate_context!()).expect("error while building Lofi Studio");
+    app.run(|_app, _event| {
+        // macOS: clicking the Dock icon while the window hides (music playing in the menu bar) brings it back.
+        #[cfg(target_os = "macos")]
+        if let tauri::RunEvent::Reopen { has_visible_windows: false, .. } = _event {
+            window::show(_app);
+        }
+    });
 }
